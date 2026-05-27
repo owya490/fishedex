@@ -1,218 +1,336 @@
 import SwiftUI
 
-struct FishedexListView: View {
+// MARK: - DEX Tab (split-panel gallery)
+
+private enum DexMode { case dex, myFish }
+
+struct DexView: View {
     let fish: [Fish]
-    @State private var searchText = ""
-    @State private var selectedFilter: FishCollectionFilter = .all
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
+    @State private var searchText   = ""
+    @State private var dexMode: DexMode = .dex
+    @State private var selectedFish: Fish
 
-    private var caughtCount: Int {
-        fish.filter(\.caught).count
+    init(fish: [Fish]) {
+        self.fish = fish
+        let first = fish.first(where: \.caught) ?? fish[0]
+        _selectedFish = State(initialValue: first)
     }
 
-    private var caughtProgress: Double {
-        guard !fish.isEmpty else {
-            return 0
-        }
-
-        return Double(caughtCount) / Double(fish.count)
-    }
-
-    private var filteredFish: [Fish] {
-        let filteredByStatus = fish.filter { fish in
-            switch selectedFilter {
-            case .all:
-                return true
-            case .caught:
-                return fish.caught
-            case .locked:
-                return !fish.caught
-            }
-        }
-
-        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return filteredByStatus
-        }
-
-        return filteredByStatus.filter { fish in
-            fish.searchableText.localizedCaseInsensitiveContains(searchText)
-        }
+    private var displayedFish: [Fish] {
+        let base = dexMode == .dex ? fish : fish.filter(\.caught)
+        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return base }
+        return base.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
     var body: some View {
-        ZStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    fishGrid
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-                .padding(.bottom, 108)
-            }
-        }
-        .background(FishedexTheme.background.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .navigationBar)
-        .safeAreaInset(edge: .bottom) {
-            bottomSearchBar
-        }
-        .overlay {
-            if filteredFish.isEmpty {
-                ContentUnavailableView(
-                    "No fish found",
-                    systemImage: "magnifyingglass",
-                    description: Text("Try another search or filter.")
+        VStack(spacing: 0) {
+            AppHeaderView()
+
+            DexSearchBar(text: $searchText)
+
+            DexModeToggle(mode: $dexMode)
+
+            HStack(spacing: 0) {
+                DexFishList(
+                    fish: displayedFish,
+                    selectedFish: $selectedFish
                 )
+                .frame(width: 128)
+
+                Rectangle()
+                    .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
+                    .frame(width: 1)
+
+                DexDetailPanel(fish: selectedFish)
+                    .frame(maxWidth: .infinity)
             }
+            .frame(maxHeight: .infinity)
         }
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
     }
+}
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Fishédex")
-                .font(.title.bold())
-                .foregroundStyle(FishedexTheme.ink)
+// MARK: - Search bar
 
-            Text("\(caughtCount) of \(fish.count) Australian species captured")
-                .font(.subheadline.weight(.semibold))
+private struct DexSearchBar: View {
+    @Binding var text: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
                 .foregroundStyle(FishedexTheme.muted)
 
-            ProgressView(value: caughtProgress)
-                .tint(FishedexTheme.ink)
-                .padding(.top, 8)
+            TextField("Search Dex...", text: $text)
+                .font(.subheadline.weight(.semibold))
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
         }
+        .padding(.horizontal, 16)
+        .frame(height: 46)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color(red: 0.84, green: 0.84, blue: 0.85), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
     }
+}
 
-    private var fishGrid: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
-            ForEach(filteredFish) { fish in
-                if fish.caught {
-                    NavigationLink(value: fish) {
-                        FishGridCell(fish: fish)
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    FishGridCell(fish: fish)
-                }
-            }
+// MARK: - Mode toggle
+
+private struct DexModeToggle: View {
+    @Binding var mode: DexMode
+
+    var body: some View {
+        HStack(spacing: 0) {
+            modeButton("DEX MODE", target: .dex)
+            modeButton("MY FISH",  target: .myFish)
         }
-    }
-
-    private var bottomSearchBar: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(FishedexTheme.muted)
-
-                TextField("Search Fishédex", text: $searchText)
-                    .font(.subheadline.weight(.semibold))
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 54)
-            .background(Color.white)
-            .clipShape(Capsule())
-            .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 8)
-
-            Menu {
-                ForEach(FishCollectionFilter.allCases) { filter in
-                    Button {
-                        selectedFilter = filter
-                    } label: {
-                        Label(filter.title, systemImage: selectedFilter == filter ? "checkmark" : filter.icon)
-                    }
-                }
-            } label: {
-                Image(systemName: selectedFilter.icon)
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(FishedexTheme.ink)
-                    .frame(width: 54, height: 54)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 8)
-            }
-        }
-        .padding(.horizontal, 18)
-        .padding(.top, 12)
+        .background(Color(red: 0.86, green: 0.86, blue: 0.87))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.horizontal, 16)
         .padding(.bottom, 8)
-        .background(.ultraThinMaterial)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
     }
-}
 
-private enum FishCollectionFilter: String, CaseIterable, Identifiable {
-    case all
-    case caught
-    case locked
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .all:
-            return "All Fish"
-        case .caught:
-            return "Caught"
-        case .locked:
-            return "Locked"
+    private func modeButton(_ title: String, target: DexMode) -> some View {
+        Button { mode = target } label: {
+            Text(title)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(mode == target ? .white : FishedexTheme.muted)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(mode == target ? FishedexTheme.tabBlue : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
+        .buttonStyle(.plain)
     }
+}
 
-    var icon: String {
-        switch self {
-        case .all:
-            return "line.3.horizontal.decrease.circle"
-        case .caught:
-            return "checkmark.circle"
-        case .locked:
-            return "lock.circle"
+// MARK: - Left fish list panel
+
+private struct DexFishList: View {
+    let fish: [Fish]
+    @Binding var selectedFish: Fish
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 6) {
+                ForEach(fish) { f in
+                    DexFishCell(fish: f, isSelected: selectedFish.id == f.id)
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedFish = f
+                            }
+                        }
+                }
+            }
+            .padding(8)
         }
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
     }
 }
 
-private extension Fish {
-    var displayName: String {
-        name
-    }
+// MARK: - Fish list cell
 
-    var searchableText: String {
-        "\(name) \(scientificName) \(habitat) \(rarity) \(number)"
+private struct DexFishCell: View {
+    let fish: Fish
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Group {
+                if fish.caught {
+                    FishArtworkView(fish: fish, height: 50, showsShadow: false)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    MysteryFishSilhouetteView()
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, 4)
+
+            Text(fish.caught ? fish.name.uppercased() : "???")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(isSelected ? .white : FishedexTheme.ink)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.bottom, 8)
+        .padding(.horizontal, 4)
+        .overlay(alignment: .topLeading) {
+            Text(fish.number)
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(isSelected ? .white.opacity(0.80) : FishedexTheme.muted)
+                .padding(5)
+        }
+        .background(isSelected ? FishedexTheme.ocean : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(
+                    isSelected ? FishedexTheme.ocean : Color(red: 0.80, green: 0.80, blue: 0.81),
+                    lineWidth: isSelected ? 2 : 1
+                )
+        )
     }
 }
 
-private struct FishGridCell: View {
+// MARK: - Right detail panel
+
+private struct DexDetailPanel: View {
     let fish: Fish
 
     var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                if fish.caught {
-                    FishArtworkView(fish: fish, height: 62, showsShadow: false)
-                } else {
-                    MysteryFishSilhouetteView()
-                }
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                decorativeDots
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
 
-            }
-            .frame(height: 74)
+                artworkCard
+                    .padding(.vertical, 8)
 
-            VStack(spacing: 2) {
-                Text(fish.displayName)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(FishedexTheme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-
-                Text(fish.number)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(FishedexTheme.muted)
+                infoBlock
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
             }
         }
-        .frame(maxWidth: .infinity)
-        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(Color.white)
+    }
+
+    // Three coloured macOS-style dots for visual flourish
+    private var decorativeDots: some View {
+        HStack(spacing: 6) {
+            Circle().fill(Color(red: 0.94, green: 0.35, blue: 0.32)).frame(width: 10, height: 10)
+            Circle().fill(Color(red: 0.95, green: 0.70, blue: 0.22)).frame(width: 10, height: 10)
+            Circle().fill(Color(red: 0.28, green: 0.78, blue: 0.36)).frame(width: 10, height: 10)
+        }
+    }
+
+    private var artworkCard: some View {
+        FishArtworkView(fish: fish, height: 120, showsShadow: true)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(FishedexTheme.accent(for: fish).opacity(0.08))
+                    .padding(.horizontal, 14)
+            )
+    }
+
+    private var infoBlock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            nameBlock
+            factGrid
+            descriptionText
+        }
+    }
+
+    private var nameBlock: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(fish.name.uppercased())
+                .font(.system(size: 17, weight: .heavy))
+                .foregroundStyle(FishedexTheme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(fish.number)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(FishedexTheme.tabBlue)
+        }
+    }
+
+    private var factGrid: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+            spacing: 8
+        ) {
+            FactCard(label: "RARITY") {
+                StarRating(stars: fish.rarityStars)
+            }
+            FactCard(label: "AVG. WEIGHT") {
+                Text(fish.avgWeight)
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(FishedexTheme.ink)
+            }
+            FactCard(label: "PREF. BAIT") {
+                Text(fish.prefBait.uppercased())
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(FishedexTheme.ink)
+            }
+            FactCard(label: "LOCATION") {
+                Text(fish.location.uppercased())
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(FishedexTheme.ink)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
+            }
+        }
+    }
+
+    private var descriptionText: some View {
+        Text(fish.about)
+            .font(.caption)
+            .foregroundStyle(FishedexTheme.muted)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
+
+// MARK: - Fact card
+
+private struct FactCard<Content: View>: View {
+    let label: String
+    let content: Content
+
+    init(label: String, @ViewBuilder content: () -> Content) {
+        self.label   = label
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.4)
+
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color(red: 0.82, green: 0.82, blue: 0.83), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Star rating
+
+private struct StarRating: View {
+    let stars: Int
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(1...3, id: \.self) { i in
+                Image(systemName: i <= stars ? "star.fill" : "star")
+                    .font(.system(size: 10))
+                    .foregroundStyle(i <= stars ? Color.yellow : Color.gray.opacity(0.35))
+            }
+        }
+    }
+}
+
+// MARK: - Shared row used by other screens (kept for compatibility)
 
 struct FishRowView: View {
     let fish: Fish
@@ -247,7 +365,7 @@ struct FishRowView: View {
 
                 HStack(spacing: 8) {
                     TraitPill(label: fish.habitat, tint: FishedexTheme.accent(for: fish))
-                    TraitPill(label: fish.rarity, tint: fish.caught ? Color.green : Color.gray)
+                    TraitPill(label: fish.rarity,  tint: fish.caught ? Color.green : Color.gray)
                 }
             }
 

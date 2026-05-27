@@ -19,6 +19,10 @@ struct Fish: Identifiable, Hashable {
     let depth: String
     let height: String
     let weight: String
+    let avgWeight: String
+    let prefBait: String
+    let location: String
+    let rarityStars: Int
     let waterType: String
     let about: String
     let caught: Bool
@@ -38,10 +42,11 @@ struct FishStat: Identifiable, Hashable {
     var id: String { name }
 }
 
+// MARK: - Catalog
+
 extension Fish {
     static let samples: [Fish] = catalog.enumerated().map { index, entry in
         let imageName = assetName(for: entry.name)
-
         return species(
             index + 1,
             entry.name,
@@ -156,13 +161,12 @@ extension Fish {
         CatalogEntry("Wahoo", "Bluewater"),
         CatalogEntry("Yabby", "River"),
         CatalogEntry("Yellowfin Bream", "Estuary"),
-        CatalogEntry("Yellowfin Tuna", "Offshore")
+        CatalogEntry("Yellowfin Tuna", "Offshore"),
     ]
 
     private struct CatalogEntry {
         let name: String
         let habitat: String
-
         init(_ name: String, _ habitat: String) {
             self.name = name
             self.habitat = habitat
@@ -171,18 +175,45 @@ extension Fish {
 
     private static func assetName(for name: String) -> String {
         switch name {
-        case "Australian Salmon":
-            return "AustralianSalmon"
-        case "Eels (Short and Long-finned)":
-            return "ShortFinnedEel"
-        case "Snapper":
-            return "PinkSnapper"
-        case "Yellowfin Bream":
-            return "YellowfinBream"
-        default:
-            return "MysteryFish"
+        case "Australian Salmon":         return "AustralianSalmon"
+        case "Eels (Short and Long-finned)": return "ShortFinnedEel"
+        case "Snapper":                   return "PinkSnapper"
+        case "Yellowfin Bream":           return "YellowfinBream"
+        default:                          return "MysteryFish"
         }
     }
+
+    // MARK: - Derived metadata helpers
+
+    private static func avgWeightEstimate(for habitat: String) -> String {
+        if habitat.contains("Bluewater") { return "80+ kg" }
+        if habitat.contains("Offshore") { return "18 kg" }
+        if habitat.contains("Deep reef") { return "8.5 kg" }
+        if habitat.contains("Reef") || habitat.contains("Rock") { return "2.3 kg" }
+        if habitat.contains("Highland") { return "1.8 kg" }
+        if habitat.contains("Estuary") { return "1.6 kg" }
+        if habitat.contains("River") || habitat.contains("Lake") { return "1.2 kg" }
+        if habitat.contains("Surf") || habitat.contains("Coastal") { return "2.1 kg" }
+        return "1.5 kg"
+    }
+
+    private static func baitSuggestion(for habitat: String) -> String {
+        if habitat.contains("Bluewater") || habitat.contains("Offshore") { return "Lure" }
+        if habitat.contains("Reef") || habitat.contains("Rock") { return "Squid" }
+        if habitat.contains("Estuary") { return "Prawn" }
+        if habitat.contains("River") || habitat.contains("stream") || habitat.contains("Lake") { return "Worm" }
+        if habitat.contains("Surf") || habitat.contains("beach") { return "Pilchard" }
+        if habitat.contains("Bay") || habitat.contains("Sand") { return "Yabby" }
+        return "Live bait"
+    }
+
+    private static func rarityStarCount(for habitat: String) -> Int {
+        if habitat.contains("Bluewater") || habitat.contains("Deep reef") || habitat.contains("Tropical") { return 3 }
+        if habitat.contains("Offshore") || habitat.contains("Highland") || habitat.contains("Rock wash") { return 2 }
+        return 1
+    }
+
+    // MARK: - Factory
 
     private static func species(
         _ id: Int,
@@ -205,15 +236,19 @@ extension Fish {
             depth: habitat.contains("Offshore") || habitat.contains("reef") ? "Deep" : "Shallow",
             height: "TBC",
             weight: "TBC",
-            waterType: habitat.contains("River") || habitat.contains("stream") || habitat.contains("Lake") || habitat.contains("Creek") || habitat.contains("Billabong") ? "Freshwater" : "Saltwater",
+            avgWeight: avgWeightEstimate(for: habitat),
+            prefBait: baitSuggestion(for: habitat),
+            location: habitat,
+            rarityStars: rarityStarCount(for: habitat),
+            waterType: habitat.contains("River") || habitat.contains("stream") || habitat.contains("Lake") ? "Freshwater" : "Saltwater",
             about: "\(name) is part of the Australian Fishédex catalog. Add artwork and catch notes as you unlock this species.",
             caught: caught,
             traits: traits ?? [habitat, rarity, season],
             moves: ["Cast", "Hook", "Land"],
             stats: [
-                FishStat(name: "Speed", value: caught ? 64 : 40),
+                FishStat(name: "Speed",  value: caught ? 64 : 40),
                 FishStat(name: "Rarity", value: rarity == "Legendary" ? 95 : rarity == "Epic" ? 82 : rarity == "Rare" ? 68 : 38),
-                FishStat(name: "Fight", value: caught ? 66 : 42)
+                FishStat(name: "Fight",  value: caught ? 66 : 42),
             ]
         )
     }

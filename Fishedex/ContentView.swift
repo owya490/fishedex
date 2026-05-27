@@ -1,43 +1,27 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selectedTab: AppTab = .map
     private let fish = Fish.samples
 
     var body: some View {
-        TabView {
-            NavigationStack {
-                DashboardView(fish: fish)
-                    .navigationDestination(for: Fish.self) { fish in
-                        FishDetailView(fish: fish)
-                    }
+        tabContent
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if selectedTab != .catch_ {
+                    CustomTabBar(selectedTab: $selectedTab)
+                }
             }
-            .tabItem {
-                Label("Dashboard", systemImage: "heart.fill")
-            }
-
-            NavigationStack {
-                CatchView()
-            }
-            .tabItem {
-                Label("Catch", systemImage: "figure.fishing")
-            }
-
-            NavigationStack {
-                FishedexListView(fish: fish)
-                    .navigationDestination(for: Fish.self) { fish in
-                        FishDetailView(fish: fish)
-                    }
-            }
-            .tabItem {
-                Label("Fishédex", systemImage: "list.bullet")
-            }
-        }
-        .tint(FishedexTheme.ocean)
     }
-}
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    @ViewBuilder
+    private var tabContent: some View {
+        switch selectedTab {
+        case .map:
+            MapTabView(fish: fish)
+        case .catch_:
+            CatchView()
+        case .dex:
+            DexView(fish: fish)
+        }
     }
 }

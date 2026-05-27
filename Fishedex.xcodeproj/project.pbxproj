@@ -17,6 +17,9 @@
 		0F1A4CA42C80000100B1A001 /* FishedexListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */; };
 		0F1A4CA52C80000100B1A001 /* FishDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */; };
 		0F1A4CA72C80000100B1A001 /* CatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4CA62C80000100B1A001 /* CatchView.swift */; };
+		BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222C80000100B1A001 /* FishingSpot.swift */; };
+		BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444442C80000100B1A001 /* AppHeaderView.swift */; };
+		BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6666662C80000100B1A001 /* CustomTabBar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +34,9 @@
 		0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishedexListView.swift; sourceTree = "<group>"; };
 		0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishDetailView.swift; sourceTree = "<group>"; };
 		0F1A4CA62C80000100B1A001 /* CatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchView.swift; sourceTree = "<group>"; };
+		BB2222222C80000100B1A001 /* FishingSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpot.swift; sourceTree = "<group>"; };
+		BB4444442C80000100B1A001 /* AppHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHeaderView.swift; sourceTree = "<group>"; };
+		BB6666662C80000100B1A001 /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +73,9 @@
 				0F1A4C8F2C80000100B1A001 /* ContentView.swift */,
 				0F1A4C9A2C80000100B1A001 /* Fish.swift */,
 				0F1A4C9B2C80000100B1A001 /* FishedexTheme.swift */,
+				BB2222222C80000100B1A001 /* FishingSpot.swift */,
+				BB4444442C80000100B1A001 /* AppHeaderView.swift */,
+				BB6666662C80000100B1A001 /* CustomTabBar.swift */,
 				0F1A4C9C2C80000100B1A001 /* FishArtworkView.swift */,
 				0F1A4C9D2C80000100B1A001 /* DashboardView.swift */,
 				0F1A4CA62C80000100B1A001 /* CatchView.swift */,
@@ -155,6 +164,9 @@
 				0F1A4CA12C80000100B1A001 /* FishedexTheme.swift in Sources */,
 				0F1A4CA22C80000100B1A001 /* FishArtworkView.swift in Sources */,
 				0F1A4C8E2C80000100B1A001 /* FishedexApp.swift in Sources */,
+				BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */,
+				BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */,
+				BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,158 +1,178 @@
 import SwiftUI
+import MapKit
 
-struct DashboardView: View {
+// MARK: - Map Tab
+
+struct MapTabView: View {
     let fish: [Fish]
 
-    private var caughtFish: [Fish] {
-        fish.filter(\.caught)
-    }
+    @State private var selectedSpot: FishingSpot? = nil
+    @State private var cameraPosition: MapCameraPosition = .region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: -33.867, longitude: 151.201),
+            span: MKCoordinateSpan(latitudeDelta: 0.038, longitudeDelta: 0.038)
+        )
+    )
 
-    private var featuredFish: Fish {
-        caughtFish.first ?? fish[0]
-    }
+    private let spots = FishingSpot.samples
+
+    private var caughtCount: Int { fish.filter(\.caught).count }
+    private var progress: Double  { Double(caughtCount) / Double(max(fish.count, 1)) }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 24) {
-                header
-                heroCard
-                statsGrid
-                recentCatches
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+        VStack(spacing: 0) {
+            AppHeaderView()
+            CollectionProgressCard(caughtCount: caughtCount, total: fish.count, progress: progress)
+            mapSection
         }
-        .background(FishedexTheme.background.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .navigationBar)
+        .background(Color.white.ignoresSafeArea())
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Your pocket guide")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(FishedexTheme.ocean)
+    // MARK: Map section
 
-            Text("Track catches, discover species, and build your fish collection.")
-                .font(.title.bold())
-                .foregroundStyle(FishedexTheme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var heroCard: some View {
-        NavigationLink(value: featuredFish) {
-            ZStack(alignment: .bottomLeading) {
-                RoundedRectangle(cornerRadius: 34, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                FishedexTheme.accent(for: featuredFish).opacity(0.96),
-                                FishedexTheme.cream
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                Circle()
-                    .fill(Color.white.opacity(0.26))
-                    .frame(width: 230, height: 230)
-                    .offset(x: 140, y: -78)
-
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Featured Catch")
-                                .font(.caption.weight(.bold))
-                                .textCase(.uppercase)
-                                .foregroundStyle(Color.white.opacity(0.82))
-
-                            Text(featuredFish.name)
-                                .font(.title.bold())
-                                .foregroundStyle(.white)
-                        }
-
-                        Spacer()
-
-                        Text(featuredFish.number)
-                            .font(.headline.weight(.bold))
-                            .foregroundStyle(.white.opacity(0.82))
-                    }
-
-                    FishArtworkView(fish: featuredFish, height: 170)
-                        .frame(maxWidth: .infinity)
-
-                    HStack {
-                        TraitPill(label: featuredFish.habitat, tint: .white)
-                        TraitPill(label: featuredFish.rarity, tint: .white)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.headline.weight(.bold))
-                            .foregroundStyle(.white)
+    private var mapSection: some View {
+        ZStack(alignment: .topLeading) {
+            Map(position: $cameraPosition) {
+                ForEach(spots) { spot in
+                    Annotation("", coordinate: spot.coordinate) {
+                        FishingSpotPin(isSelected: selectedSpot?.id == spot.id)
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedSpot = selectedSpot?.id == spot.id ? nil : spot
+                                }
+                            }
                     }
                 }
-                .padding(22)
+                UserAnnotation()
             }
-            .frame(height: 320)
-            .contentShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+            .mapStyle(.standard)
+            .onTapGesture {
+                withAnimation { selectedSpot = nil }
+            }
+
+            localWatersLabel
+
+            if let spot = selectedSpot {
+                SpotCallout(spot: spot)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 56)
+                    .transition(.opacity.combined(with: .scale(scale: 0.92, anchor: .top)))
+            }
         }
-        .buttonStyle(.plain)
+        .frame(maxHeight: .infinity)
     }
 
-    private var statsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-            DashboardStatCard(title: "Caught", value: "\(caughtFish.count)/\(fish.count)", caption: "species logged", icon: "checkmark.seal.fill", tint: FishedexTheme.ocean)
-            DashboardStatCard(title: "Rarest", value: "Legendary", caption: "best find", icon: "sparkles", tint: FishedexTheme.coral)
-            DashboardStatCard(title: "Hotspot", value: "Reef", caption: "most active", icon: "water.waves", tint: Color(red: 0.35, green: 0.65, blue: 0.90))
-            DashboardStatCard(title: "Streak", value: "3 days", caption: "keep fishing", icon: "flame.fill", tint: Color(red: 0.95, green: 0.65, blue: 0.20))
-        }
+    private var localWatersLabel: some View {
+        Text("LOCAL WATERS")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(FishedexTheme.ink)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+            .padding(14)
     }
+}
 
-    private var recentCatches: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Recent Catches")
-                .font(.title3.bold())
-                .foregroundStyle(FishedexTheme.ink)
+// MARK: - Collection Progress Card
 
-            ForEach(caughtFish.prefix(3)) { fish in
-                NavigationLink(value: fish) {
-                    FishRowView(fish: fish)
-                }
-                .buttonStyle(.plain)
+private struct CollectionProgressCard: View {
+    let caughtCount: Int
+    let total: Int
+    let progress: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("COLLECTION PROGRESS")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.8)
+
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text(String(format: "%.1f%%", progress * 100))
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .foregroundStyle(FishedexTheme.ink)
+
+                Spacer()
+
+                Text("\(caughtCount) / \(total) FISH")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(FishedexTheme.ocean)
+            }
+
+            CollectionProgressBlocks(progress: progress)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Color.white)
+    }
+}
+
+// MARK: - Progress blocks
+
+private struct CollectionProgressBlocks: View {
+    let progress: Double
+    private let total = 12
+
+    private var filled: Int { Int(Double(total) * min(max(progress, 0), 1)) }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<total, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(i < filled ? FishedexTheme.progressGreen : Color(red: 0.86, green: 0.86, blue: 0.87))
+                    .frame(height: 14)
+                    .frame(maxWidth: .infinity)
             }
         }
     }
 }
 
-private struct DashboardStatCard: View {
-    let title: String
-    let value: String
-    let caption: String
-    let icon: String
-    let tint: Color
+// MARK: - Map annotation pin
+
+private struct FishingSpotPin: View {
+    let isSelected: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: icon)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(tint)
+        ZStack {
+            Circle()
+                .fill(Color.white)
+                .frame(width: 40, height: 40)
+                .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
 
-            Text(value)
-                .font(.title2.bold())
+            Image(systemName: "fish.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color(red: 0.18, green: 0.68, blue: 0.38))
+        }
+        .overlay(
+            Circle()
+                .stroke(isSelected ? FishedexTheme.ocean : Color.clear, lineWidth: 3)
+        )
+        .scaleEffect(isSelected ? 1.15 : 1.0)
+        .animation(.spring(response: 0.25), value: isSelected)
+    }
+}
+
+// MARK: - Spot callout card
+
+private struct SpotCallout: View {
+    let spot: FishingSpot
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(spot.name)
+                .font(.headline.weight(.bold))
                 .foregroundStyle(FishedexTheme.ink)
 
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(FishedexTheme.ink)
-
-            Text(caption)
-                .font(.caption)
+            Text("Biome: \(spot.biome)")
+                .font(.subheadline)
                 .foregroundStyle(FishedexTheme.muted)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .fishedexCard(cornerRadius: 24)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 4)
     }
 }
