@@ -9,6 +9,7 @@ final class LocationWeatherManager: NSObject, ObservableObject {
     // Time
     @Published var timeLabel    = "LOADING..."
     @Published var timeIcon     = "sun.max.fill"
+    @Published var dateLabel    = ""
 
     // Weather — starts with a placeholder so the row always renders
     @Published var weatherLabel = "LOCATING..."
@@ -18,8 +19,8 @@ final class LocationWeatherManager: NSObject, ObservableObject {
     @Published var windIcon          = "wind"
     @Published var pressureLabel     = "—"
     @Published var pressureIcon      = "gauge.with.dots.needle.33percent"
-    @Published var precipitationLabel = "—"
-    @Published var precipitationIcon = "cloud.rain.fill"
+    @Published var precipitationLabel = "0%"
+    @Published var precipitationIcon = "sun.min.fill"
     @Published var moonPhaseLabel    = "—"
     @Published var moonPhaseIcon       = "moon.fill"
 
@@ -75,15 +76,21 @@ final class LocationWeatherManager: NSObject, ObservableObject {
             label = "NIGHT"; icon = "moon.stars.fill"
         }
 
-        let fmt = DateFormatter()
-        fmt.dateFormat = "h:mm a"
-        let clock = fmt.string(from: Date()).uppercased()
+        let now = Date()
+
+        let clockFmt = DateFormatter()
+        clockFmt.dateFormat = "h:mm a"
+        let clock = clockFmt.string(from: now).uppercased()
+
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "EEE · d MMM yyyy"
+        dateLabel = dateFmt.string(from: now).uppercased()
 
         timeLabel = "\(label) · \(clock)"
         timeIcon  = icon
 
         let moon = Self.moonPhaseInfo(for: Date())
-        moonPhaseLabel = moon.label
+        moonPhaseLabel = moon.shortLabel
         moonPhaseIcon  = moon.icon
     }
 
@@ -93,9 +100,11 @@ final class LocationWeatherManager: NSObject, ObservableObject {
         let urlStr = "https://api.open-meteo.com/v1/forecast"
             + "?latitude=\(lat)&longitude=\(lon)"
             + "&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,precipitation"
+            + "&hourly=precipitation_probability"
             + "&temperature_unit=celsius"
             + "&wind_speed_unit=kmh"
             + "&precipitation_unit=mm"
+            + "&timezone=auto"
         guard let url = URL(string: urlStr) else { return }
 
         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
@@ -112,6 +121,7 @@ final class LocationWeatherManager: NSObject, ObservableObject {
             let windDir   = current["wind_direction_10m"] as? Double
             let pressure  = current["surface_pressure"] as? Double
             let precip    = current["precipitation"] as? Double
+            let rainChance = Self.currentPrecipitationProbability(from: json)
 
             DispatchQueue.main.async {
                 self.weatherLabel = "\(label) · \(Int(temp.rounded()))°C"
@@ -129,14 +139,54 @@ final class LocationWeatherManager: NSObject, ObservableObject {
                     self.pressureLabel = "\(Int(pressure.rounded())) HPA"
                 }
 
-                if let precip {
-                    self.precipitationLabel = precip < 0.1
-                        ? "DRY"
-                        : String(format: "%.1f MM", precip)
-                    self.precipitationIcon = precip < 0.1 ? "sun.dust.fill" : "cloud.rain.fill"
-                }
+                let rain = Self.precipitationInfo(
+                    code: code,
+                    probability: rainChance,
+                    currentMm: precip ?? 0
+                )
+                self.precipitationLabel = rain.label
+                self.precipitationIcon  = rain.icon
             }
         }.resume()
+    }
+
+    private static func currentPrecipitationProbability(from json: [String: Any]) -> Int {
+        guard let hourly = json["hourly"] as? [String: Any],
+              let times = hourly["time"] as? [String],
+              let probs = hourly["precipitation_probability"] as? [Any],
+              !times.isEmpty, !probs.isEmpty
+        else { return 0 }
+
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        fmt.timeZone = .current
+        let hourStart = Calendar.current.dateInterval(of: .hour, for: Date())?.start ?? Date()
+
+        var index = 0
+        for (i, t) in times.enumerated() {
+            guard let d = fmt.date(from: t) else { continue }
+            if d >= hourStart {
+                index = i
+                break
+            }
+            index = i
+        }
+
+        guard index < probs.count else { return 0 }
+        return Int((probs[index] as? Double) ?? Double(probs[index] as? Int ?? 0))
+    }
+
+    private static func precipitationInfo(code: Int, probability: Int, currentMm: Double) -> (label: String, icon: String) {
+        let prob = max(0, min(100, probability))
+        let label = "\(prob)%"
+
+        if (95...99).contains(code) {
+            return (label, "cloud.bolt.rain.fill")
+        }
+        if currentMm >= 0.1 || (51...82).contains(code) || prob >= 40 {
+            return (label, "cloud.rain.fill")
+        }
+        return (label, "sun.min.fill")
     }
 
     private static func compassDirection(degrees: Double) -> String {
@@ -149,7 +199,7 @@ final class LocationWeatherManager: NSObject, ObservableObject {
         speed >= 25 ? "wind.circle.fill" : "wind"
     }
 
-    private static func moonPhaseInfo(for date: Date) -> (label: String, icon: String) {
+    private static func moonPhaseInfo(for date: Date) -> (shortLabel: String, icon: String) {
         let synodicMonth = 29.530588853
         let knownNewMoon = Date(timeIntervalSince1970: 947_182_440)
         let days = date.timeIntervalSince(knownNewMoon) / 86_400.0
@@ -157,21 +207,21 @@ final class LocationWeatherManager: NSObject, ObservableObject {
 
         switch phase {
         case 0..<0.0625, 0.9375...1.0:
-            return ("NEW MOON", "moon.fill")
+            return ("NEW", "moon.fill")
         case 0.0625..<0.1875:
-            return ("WAXING CRESCENT", "moonphase.waxing.crescent")
+            return ("WAXING", "moonphase.waxing.crescent")
         case 0.1875..<0.3125:
-            return ("FIRST QUARTER", "moonphase.first.quarter")
+            return ("1ST QTR", "moonphase.first.quarter")
         case 0.3125..<0.4375:
-            return ("WAXING GIBBOUS", "moonphase.waxing.gibbous")
+            return ("WAX GIB", "moonphase.waxing.gibbous")
         case 0.4375..<0.5625:
-            return ("FULL MOON", "moonphase.full.moon")
+            return ("FULL", "moonphase.full.moon")
         case 0.5625..<0.6875:
-            return ("WANING GIBBOUS", "moonphase.waning.gibbous")
+            return ("WAN GIB", "moonphase.waning.gibbous")
         case 0.6875..<0.8125:
-            return ("LAST QUARTER", "moonphase.last.quarter")
+            return ("LAST QTR", "moonphase.last.quarter")
         default:
-            return ("WANING CRESCENT", "moonphase.waning.crescent")
+            return ("WANING", "moonphase.waning.crescent")
         }
     }
 
@@ -239,7 +289,8 @@ extension LocationWeatherManager: CLLocationManagerDelegate {
                 self.locationName = "Location unavailable"
                 self.windLabel = "—"
                 self.pressureLabel = "—"
-                self.precipitationLabel = "—"
+                self.precipitationLabel = "0%"
+                self.precipitationIcon  = "sun.min.fill"
             }
         default:
             break

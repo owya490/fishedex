@@ -33,10 +33,9 @@ struct CustomTabBar: View {
             ) { selectedTab = .dex }
         }
         .padding(.horizontal, 12)
-        .padding(.top, 6)
+        .padding(.top, 10)
         .padding(.bottom, 6)
         .background(Color(red: 0.92, green: 0.92, blue: 0.93))
-        .ignoresSafeArea(edges: .bottom)
     }
 }
 

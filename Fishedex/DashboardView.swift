@@ -130,20 +130,32 @@ private struct DashboardBannerCarousel: View {
     @State private var carouselTimer: AnyCancellable?
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
+            if page == 0 {
+                Text(location.dateLabel)
+                    .font(FishedexFont.caption)
+                    .foregroundStyle(FishedexTheme.muted)
+                    .kerning(0.6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                    .transition(.opacity)
+            }
+
             TabView(selection: $page) {
+                WeatherInfoBanner(location: location)
+                    .tag(0)
+
                 CollectionProgressCard(
                     caughtCount: caughtCount,
                     total: total,
                     progress: progress
                 )
-                .tag(0)
-
-                WeatherInfoBanner(location: location)
-                    .tag(1)
+                .tag(1)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 108)
+            .frame(height: 100)
             .animation(.easeInOut(duration: 0.45), value: page)
 
             HStack(spacing: 6) {
@@ -154,9 +166,11 @@ private struct DashboardBannerCarousel: View {
                         .animation(.easeInOut(duration: 0.25), value: page)
                 }
             }
-            .padding(.bottom, 4)
+            .padding(.top, 2)
+            .padding(.bottom, 6)
         }
         .background(Color.white)
+        .animation(.easeInOut(duration: 0.45), value: page)
         .onAppear { startCarousel() }
         .onDisappear { carouselTimer = nil }
     }
@@ -226,7 +240,8 @@ private struct WeatherInfoBanner: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 10)
+        .padding(.top, 4)
+        .padding(.bottom, 0)
     }
 }
 
@@ -296,7 +311,8 @@ private struct CollectionProgressCard: View {
             FishedexProgressBar(progress: progress)
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 10)
+        .padding(.top, 4)
+        .padding(.bottom, 0)
         .background(Color.white)
     }
 }

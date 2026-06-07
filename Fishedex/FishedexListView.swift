@@ -4,6 +4,26 @@ import SwiftUI
 
 private enum DexMode { case dex, myFish }
 
+private enum DexSortOption: String, CaseIterable, Identifiable {
+    case fishNumber
+    case alphabetical
+    case discovered
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .fishNumber: return "Fish #"
+        case .alphabetical: return "A–Z"
+        case .discovered: return "Discovered"
+        }
+    }
+}
+
+private enum DexLayout {
+    static let scrollBottomInset: CGFloat = 16
+}
+
 struct DexView: View {
     @EnvironmentObject private var session: SessionManager
 
@@ -13,6 +33,7 @@ struct DexView: View {
 
     @State private var searchText = ""
     @State private var dexMode: DexMode = .dex
+    @State private var sortOption: DexSortOption = .fishNumber
     @State private var selectedFish: Fish?
     @State private var selectedCatchID: UUID?
     @State private var fishForDetail: Fish?
@@ -32,6 +53,22 @@ struct DexView: View {
     private var displayedFish: [Fish] {
         guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return fish }
         return fish.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    private var sortedDisplayedFish: [Fish] {
+        switch sortOption {
+        case .fishNumber:
+            return displayedFish.sorted { $0.id < $1.id }
+        case .alphabetical:
+            return displayedFish.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        case .discovered:
+            return displayedFish.sorted {
+                if $0.caught != $1.caught { return $0.caught && !$1.caught }
+                return $0.id < $1.id
+            }
+        }
     }
 
     private var displayedCatches: [UserCatchRow] {
@@ -80,6 +117,9 @@ struct DexView: View {
                 placeholder: dexMode == .dex ? "Search Dex..." : "Search your catches..."
             )
             DexModeToggle(mode: $dexMode)
+            if dexMode == .dex {
+                DexSortBar(sort: $sortOption)
+            }
             splitPanel
         }
     }
@@ -102,7 +142,7 @@ struct DexView: View {
     @ViewBuilder
     private var leftPanel: some View {
         if dexMode == .dex {
-            DexFishList(fish: displayedFish, selectedFish: $selectedFish)
+            DexFishList(fish: sortedDisplayedFish, selectedFish: $selectedFish)
         } else {
             DexCatchList(catches: displayedCatches, selectedCatchID: $selectedCatchID)
         }
@@ -138,7 +178,7 @@ struct DexView: View {
     private func handleDexModeChange(_: DexMode, _ mode: DexMode) {
         searchText = ""
         if mode == .dex {
-            selectedFish = displayedFish.first
+            selectedFish = sortedDisplayedFish.first
         } else {
             syncSelectedCatch()
         }
@@ -200,6 +240,62 @@ private struct DexSearchBar: View {
     }
 }
 
+// MARK: - Sort bar
+
+private struct DexSortBar: View {
+    @Binding var sort: DexSortOption
+
+    private let trackColor = Color(red: 0.90, green: 0.90, blue: 0.91)
+    private let selectedFill = Color(red: 0.78, green: 0.80, blue: 0.84)
+    private let borderColor = Color.black.opacity(0.14)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(FishedexTheme.muted.opacity(0.75))
+
+                Text("SORT")
+                    .font(FishedexFont.micro)
+                    .foregroundStyle(FishedexTheme.muted.opacity(0.75))
+
+                HStack(spacing: 0) {
+                    ForEach(DexSortOption.allCases) { option in
+                        sortButton(option)
+                    }
+                }
+                .background(trackColor)
+                .fishedexSquare()
+                .fishedexBorder(lineWidth: 1, color: borderColor)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+        }
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
+    }
+
+    private func sortButton(_ option: DexSortOption) -> some View {
+        Button { sort = option } label: {
+            Text(option.title.uppercased())
+                .font(FishedexFont.micro)
+                .foregroundStyle(sort == option ? FishedexTheme.ink : FishedexTheme.muted.opacity(0.8))
+                .frame(maxWidth: .infinity)
+                .frame(height: 24)
+                .background(sort == option ? selectedFill : Color.clear)
+                .fishedexSquare()
+                .fishedexBorder(lineWidth: 1, color: borderColor)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Mode toggle
 
 private struct DexModeToggle: View {
@@ -207,15 +303,30 @@ private struct DexModeToggle: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            modeButton("DEX MODE", target: .dex)
-            modeButton("MY FISH",  target: .myFish)
+            fishedexModeButton(target: .dex)
+            modeButton("MY FISH", target: .myFish)
         }
         .background(Color(red: 0.86, green: 0.86, blue: 0.87))
         .fishedexSquare()
         .fishedexBorder()
         .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        .padding(.bottom, 4)
         .background(Color(red: 0.95, green: 0.95, blue: 0.96))
+    }
+
+    private func fishedexModeButton(target: DexMode) -> some View {
+        Button { mode = target } label: {
+            Text("FISHÉDEX")
+                .font(FishedexFont.subheadline)
+                .italic()
+                .foregroundStyle(mode == target ? .white : FishedexTheme.muted)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(mode == target ? FishedexTheme.tabBlue : Color.clear)
+                .fishedexSquare()
+                .fishedexBorder(lineWidth: 1)
+        }
+        .buttonStyle(.plain)
     }
 
     private func modeButton(_ title: String, target: DexMode) -> some View {
@@ -253,6 +364,7 @@ private struct DexFishList: View {
             }
             .padding(8)
         }
+        .contentMargins(.bottom, DexLayout.scrollBottomInset, for: .scrollContent)
         .background(Color(red: 0.95, green: 0.95, blue: 0.96))
     }
 }
@@ -323,6 +435,7 @@ private struct DexCatchList: View {
             }
             .padding(8)
         }
+        .contentMargins(.bottom, DexLayout.scrollBottomInset, for: .scrollContent)
         .background(Color(red: 0.95, green: 0.95, blue: 0.96))
     }
 }
@@ -470,6 +583,7 @@ private struct DexCatchDetailPanel: View {
                 .padding(.bottom, 24)
             }
         }
+        .contentMargins(.bottom, DexLayout.scrollBottomInset, for: .scrollContent)
         .background(Color.white)
     }
 }
@@ -522,6 +636,7 @@ private struct DexDetailPanel: View {
                     .padding(.bottom, 24)
             }
         }
+        .contentMargins(.bottom, DexLayout.scrollBottomInset, for: .scrollContent)
         .background(Color.white)
     }
 

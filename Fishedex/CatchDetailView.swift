@@ -34,6 +34,25 @@ struct CatchDetailView: View {
         session.photos(for: catchID)
     }
 
+    private var hasUnsavedChanges: Bool {
+        guard let catchRow, didLoadFields else { return false }
+
+        if normalizedOptional(nickname) != normalizedOptional(catchRow.customName) { return true }
+        if normalizedOptional(locationName) != normalizedOptional(catchRow.locationName) { return true }
+        if normalizedOptional(bait) != normalizedOptional(catchRow.bait) { return true }
+        if normalizedOptional(notes) != normalizedOptional(catchRow.notes) { return true }
+        if parsedDouble(lengthCm) != catchRow.lengthCm { return true }
+        if parsedDouble(weightKg) != catchRow.weightKg { return true }
+        if !Calendar.current.isDate(catchDate, equalTo: catchRow.caughtAt, toGranularity: .minute) {
+            return true
+        }
+        return false
+    }
+
+    private var canSaveChanges: Bool {
+        hasUnsavedChanges && !session.isUpdatingCatch
+    }
+
     var body: some View {
         Group {
             if let catchRow {
@@ -91,22 +110,16 @@ struct CatchDetailView: View {
 
     private func heroCard(catchRow: UserCatchRow) -> some View {
         VStack(spacing: 0) {
-            Button {
-                if !catchPhotos.isEmpty {
-                    viewerPhotoIndex = 0
+            Group {
+                if let fish {
+                    FishArtworkView(fish: fish, height: 140, showsShadow: true)
+                } else {
+                    PixelGrayFishIconView(size: 100)
                 }
-            } label: {
-                CatchPhotoView(
-                    urlString: session.primaryPhotoUrl(for: catchRow),
-                    fish: fish,
-                    height: 200
-                )
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(accent.opacity(0.08))
             }
-            .buttonStyle(.plain)
-            .disabled(catchPhotos.isEmpty)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .background(accent.opacity(0.08))
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(displayTitle(for: catchRow).uppercased())
@@ -243,13 +256,13 @@ struct CatchDetailView: View {
                     Spacer()
                 }
                 .padding(.vertical, 12)
-                .background(FishedexTheme.tabGreen)
-                .foregroundStyle(.white)
+                .background(canSaveChanges ? FishedexTheme.tabGreen : Color(red: 0.86, green: 0.86, blue: 0.87))
+                .foregroundStyle(canSaveChanges ? .white : FishedexTheme.muted)
                 .fishedexSquare()
                 .fishedexBorder()
             }
             .buttonStyle(.plain)
-            .disabled(session.isUpdatingCatch)
+            .disabled(!canSaveChanges)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -277,6 +290,14 @@ struct CatchDetailView: View {
         let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
         return session.catchTitle(for: catchRow)
+    }
+
+    private func normalizedOptional(_ value: String?) -> String? {
+        value?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+    }
+
+    private func parsedDouble(_ text: String) -> Double? {
+        Double(text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private func loadFieldsIfNeeded() {
@@ -339,12 +360,17 @@ struct CatchPhotoView: View {
                         image
                             .resizable()
                             .scaledToFill()
-                    default:
-                        fallbackArt
+                            .transition(.opacity)
+                    case .failure:
+                        photoUnavailablePlaceholder
+                    case .empty:
+                        loadingPlaceholder
+                    @unknown default:
+                        loadingPlaceholder
                     }
                 }
             } else {
-                fallbackArt
+                noPhotoPlaceholder
             }
         }
         .frame(height: height)
@@ -352,18 +378,30 @@ struct CatchPhotoView: View {
         .clipped()
     }
 
+    private var loadingPlaceholder: some View {
+        ZStack {
+            Color(red: 0.95, green: 0.95, blue: 0.96)
+            ProgressView()
+                .tint(FishedexTheme.tabBlue)
+        }
+    }
+
+    private var photoUnavailablePlaceholder: some View {
+        ZStack {
+            Color(red: 0.95, green: 0.95, blue: 0.96)
+            Image(systemName: "photo")
+                .font(.system(size: height * 0.28))
+                .foregroundStyle(FishedexTheme.muted)
+        }
+    }
+
     @ViewBuilder
-    private var fallbackArt: some View {
+    private var noPhotoPlaceholder: some View {
         if let fish {
             FishArtworkView(fish: fish, height: height * 0.85, showsShadow: false)
                 .frame(maxWidth: .infinity)
         } else {
-            ZStack {
-                Color(red: 0.95, green: 0.95, blue: 0.96)
-                Image(systemName: "fish.fill")
-                    .font(.system(size: height * 0.28))
-                    .foregroundStyle(FishedexTheme.muted)
-            }
+            photoUnavailablePlaceholder
         }
     }
 }
