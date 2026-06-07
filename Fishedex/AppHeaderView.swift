@@ -8,6 +8,7 @@ struct AppHeaderView: View {
     var onLogoTap: (() -> Void)? = nil
     var showsProfileButton: Bool = true
     var showsProfileAvatar: Bool = true
+    var isBackDisabled: Bool = false
 
     private let slotSize: CGFloat = 32
     private let iconSize: CGFloat = 48
@@ -41,7 +42,7 @@ struct AppHeaderView: View {
     @ViewBuilder
     private var leadingSlot: some View {
         if let onBack {
-            FishedexBackButton(action: onBack, style: .header, size: slotSize)
+            FishedexBackButton(action: onBack, style: .header, size: slotSize, isDisabled: isBackDisabled)
         } else if let onLogoTap {
             Button(action: onLogoTap) {
                 logoImage

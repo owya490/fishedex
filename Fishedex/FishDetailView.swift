@@ -135,8 +135,6 @@ struct FishDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: 8) {
-                DetailFactRow(label: "Height", value: fish.height)
-                DetailFactRow(label: "Weight", value: fish.weight)
                 DetailFactRow(label: "Water", value: fish.waterType)
                 DetailFactRow(label: "Season", value: fish.season)
                 DetailFactRow(label: "Depth", value: fish.depth)

@@ -20,6 +20,9 @@ final class SessionManager: ObservableObject {
     )
     @Published private(set) var achievements: [AchievementRow] = []
     @Published private(set) var unlockedAchievementIDs: Set<Int> = []
+    @Published private(set) var friends: [FriendSummary] = []
+    @Published private(set) var incomingFriendRequests: [FriendRequest] = []
+    @Published private(set) var outgoingPendingFriends: [FriendSummary] = []
     @Published var showProfile = false
     @Published var isUploadingAvatar = false
     @Published var isLoggingCatch = false
@@ -29,6 +32,7 @@ final class SessionManager: ObservableObject {
     @Published var errorMessage: String? // surfaced on auth + profile screens
 
     private var authListenerTask: Task<Void, Never>?
+    private var rareSpeciesIDs: Set<Int> = []
 
     init() {
         authListenerTask = Task { await listenForAuthChanges() }
@@ -92,6 +96,10 @@ final class SessionManager: ObservableObject {
             )
             photoURL = uploaded.photoURL
             initialPhotoID = photoID
+
+            if let url = URL(string: uploaded.photoURL) {
+                await ImageCache.shared.store(data: photoData, for: url)
+            }
         }
 
         let trimmedName = input.fishName?
@@ -276,6 +284,10 @@ final class SessionManager: ObservableObject {
             sortOrder: sortOrder
         )
 
+        if let url = URL(string: uploaded.photoURL) {
+            await ImageCache.shared.store(data: photoData, for: url)
+        }
+
         if photos(for: catchId).isEmpty {
             struct PhotoURLUpdate: Encodable {
                 let photo_url: String
@@ -360,12 +372,18 @@ final class SessionManager: ObservableObject {
             }
             let path = UserStorage.profileAvatarPath(userId: userID, fileExtension: "jpg")
 
+            if let oldURLString = profile?.avatarUrl, let oldURL = URL(string: oldURLString) {
+                await ImageCache.shared.remove(for: oldURL)
+            }
+
             let publicURL = try await UserStorage.uploadImage(
                 bucket: UserStorage.Bucket.avatars,
                 path: path,
                 data: photoData,
                 contentType: "image/jpeg"
             )
+
+            await ImageCache.shared.store(data: photoData, for: publicURL)
 
             struct AvatarUpdate: Encodable {
                 let avatar_url: String
@@ -457,6 +475,7 @@ final class SessionManager: ObservableObject {
             achievements = allAchievements
             unlockedAchievementIDs = Set(unlocked.map(\.achievementId))
 
+            rareSpeciesIDs = Set(species.filter(\.isRare).map(\.id))
             let caughtSpeciesIDs = Set(userCatches.compactMap(\.speciesId))
             let catchBySpecies = Dictionary(
                 uniqueKeysWithValues: userCatches.compactMap { catchRow in
@@ -501,7 +520,276 @@ final class SessionManager: ObservableObject {
                     )
                 }
             )
+
+            await refreshFriends()
             errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func searchUserByEmail(_ email: String) async throws -> ProfileRow? {
+        guard isAuthenticated else { throw SessionError.notAuthenticated }
+
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return nil }
+
+        let results: [ProfileRow] = try await supabase
+            .rpc("find_user_by_email", params: ["search_email": trimmed])
+            .execute()
+            .value
+
+        return results.first
+    }
+
+    func friendshipRelation(with profileId: UUID) -> FriendshipRelation {
+        if friends.contains(where: { $0.profile.id == profileId }) {
+            return .accepted
+        }
+        if let request = incomingFriendRequests.first(where: { $0.requester.id == profileId }) {
+            return .incomingPending(friendshipId: request.friendshipId)
+        }
+        if let pending = outgoingPendingFriends.first(where: { $0.profile.id == profileId }) {
+            return .outgoingPending(friendshipId: pending.friendshipId)
+        }
+        return .none
+    }
+
+    func addFriend(profile: ProfileRow) async throws {
+        guard isAuthenticated else { throw SessionError.notAuthenticated }
+
+        let userID = try await supabase.auth.session.user.id
+        guard profile.id != userID else { throw SessionError.cannotAddSelf }
+
+        switch friendshipRelation(with: profile.id) {
+        case .accepted:
+            throw SessionError.alreadyFriends
+        case .outgoingPending:
+            throw SessionError.requestAlreadySent
+        case .incomingPending(let friendshipId):
+            try await acceptFriendRequest(friendshipId: friendshipId)
+            return
+        case .none:
+            break
+        }
+
+        struct FriendshipInsert: Encodable {
+            let user_id: UUID
+            let friend_id: UUID
+            let status: String
+        }
+
+        try await supabase
+            .from("friendships")
+            .insert(
+                FriendshipInsert(
+                    user_id: userID,
+                    friend_id: profile.id,
+                    status: FriendshipStatus.pending.rawValue
+                )
+            )
+            .execute()
+
+        await refreshFriends()
+        errorMessage = nil
+    }
+
+    func acceptFriendRequest(friendshipId: UUID) async throws {
+        guard isAuthenticated else { throw SessionError.notAuthenticated }
+
+        let userID = try await supabase.auth.session.user.id
+
+        struct StatusUpdate: Encodable {
+            let status: String
+        }
+
+        try await supabase
+            .from("friendships")
+            .update(StatusUpdate(status: FriendshipStatus.accepted.rawValue))
+            .eq("id", value: friendshipId.uuidString)
+            .eq("friend_id", value: userID.uuidString)
+            .eq("status", value: FriendshipStatus.pending.rawValue)
+            .execute()
+
+        await refreshFriends()
+        errorMessage = nil
+    }
+
+    func declineFriendRequest(friendshipId: UUID) async throws {
+        guard isAuthenticated else { throw SessionError.notAuthenticated }
+
+        let userID = try await supabase.auth.session.user.id
+
+        try await supabase
+            .from("friendships")
+            .delete()
+            .eq("id", value: friendshipId.uuidString)
+            .eq("friend_id", value: userID.uuidString)
+            .eq("status", value: FriendshipStatus.pending.rawValue)
+            .execute()
+
+        await refreshFriends()
+        errorMessage = nil
+    }
+
+    func fetchFriendProfile(id: UUID) async throws -> ProfileRow {
+        try await supabase
+            .from("profiles")
+            .select()
+            .eq("id", value: id.uuidString)
+            .single()
+            .execute()
+            .value
+    }
+
+    func fetchFriendCatches(userId: UUID) async throws -> [UserCatchRow] {
+        try await supabase
+            .from("user_catches")
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+            .value
+    }
+
+    func fetchFriendTopCatches(userId: UUID, limit: Int = 6) async throws -> [UserCatchRow] {
+        let catches = try await fetchFriendCatches(userId: userId)
+        return catches
+            .sorted { lhs, rhs in
+                let lhsWeight = lhs.weightKg ?? 0
+                let rhsWeight = rhs.weightKg ?? 0
+                if lhsWeight != rhsWeight { return lhsWeight > rhsWeight }
+                return lhs.caughtAt > rhs.caughtAt
+            }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    func friendStats(for catches: [UserCatchRow], totalSpecies: Int) -> AnglerStats {
+        let caughtSpeciesIDs = Set(catches.compactMap(\.speciesId))
+        let caughtRare = caughtSpeciesIDs.filter { rareSpeciesIDs.contains($0) }.count
+        let totalWeight = catches.compactMap(\.weightKg).reduce(0, +)
+
+        return AnglerStats(
+            caughtCount: caughtSpeciesIDs.count,
+            totalSpecies: totalSpecies,
+            rareCaughtCount: caughtRare,
+            totalWeightKg: totalWeight,
+            unlockedAchievements: 0,
+            totalAchievements: 0
+        )
+    }
+
+    func fishName(for catchRow: UserCatchRow) -> String {
+        if let name = catchRow.customName?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !name.isEmpty {
+            return name
+        }
+        if let speciesId = catchRow.speciesId,
+           let species = fish.first(where: { $0.id == speciesId }) {
+            return species.name
+        }
+        return "Unknown fish"
+    }
+
+    func fishImageName(for catchRow: UserCatchRow) -> String {
+        if let speciesId = catchRow.speciesId,
+           let species = fish.first(where: { $0.id == speciesId }) {
+            return species.imageName
+        }
+        return "MysteryFish"
+    }
+
+    private func refreshFriends() async {
+        guard isAuthenticated else {
+            friends = []
+            incomingFriendRequests = []
+            outgoingPendingFriends = []
+            return
+        }
+
+        do {
+            let userID = try await supabase.auth.session.user.id
+
+            async let sentFetch: [FriendshipRow] = supabase
+                .from("friendships")
+                .select()
+                .eq("user_id", value: userID.uuidString)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            async let receivedFetch: [FriendshipRow] = supabase
+                .from("friendships")
+                .select()
+                .eq("friend_id", value: userID.uuidString)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            let (sent, received) = try await (sentFetch, receivedFetch)
+            let friendships = sent + received
+
+            guard !friendships.isEmpty else {
+                friends = []
+                incomingFriendRequests = []
+                outgoingPendingFriends = []
+                return
+            }
+
+            let profileIDs = Set(
+                friendships.flatMap { friendship in
+                    [friendship.userId, friendship.friendId]
+                }
+            )
+            .subtracting([userID])
+
+            let profiles: [ProfileRow] = try await supabase
+                .from("profiles")
+                .select()
+                .in("id", values: profileIDs.map(\.uuidString))
+                .execute()
+                .value
+
+            let profileByID = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
+
+            var accepted: [FriendSummary] = []
+            var incoming: [FriendRequest] = []
+            var outgoing: [FriendSummary] = []
+
+            for friendship in friendships {
+                switch friendship.status {
+                case .accepted:
+                    let otherID = friendship.userId == userID ? friendship.friendId : friendship.userId
+                    guard let profile = profileByID[otherID] else { continue }
+                    accepted.append(
+                        FriendSummary(
+                            friendshipId: friendship.id,
+                            profile: profile,
+                            status: .accepted
+                        )
+                    )
+                case .pending:
+                    if friendship.friendId == userID {
+                        guard let requester = profileByID[friendship.userId] else { continue }
+                        incoming.append(
+                            FriendRequest(friendshipId: friendship.id, requester: requester)
+                        )
+                    } else {
+                        guard let recipient = profileByID[friendship.friendId] else { continue }
+                        outgoing.append(
+                            FriendSummary(
+                                friendshipId: friendship.id,
+                                profile: recipient,
+                                status: .pending
+                            )
+                        )
+                    }
+                }
+            }
+
+            friends = accepted
+            incomingFriendRequests = incoming
+            outgoingPendingFriends = outgoing
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -521,6 +809,9 @@ final class SessionManager: ObservableObject {
                 fish = Fish.samples
                 catches = []
                 catchPhotos = []
+                friends = []
+                incomingFriendRequests = []
+                outgoingPendingFriends = []
                 recomputeStats(species: [], catches: [], achievements: [], unlocked: [])
             default:
                 break
@@ -551,9 +842,22 @@ final class SessionManager: ObservableObject {
     }
 }
 
-enum SessionError: Error {
+enum SessionError: Error, LocalizedError {
     case notAuthenticated
     case invalidImage
+    case cannotAddSelf
+    case alreadyFriends
+    case requestAlreadySent
+
+    var errorDescription: String? {
+        switch self {
+        case .notAuthenticated: return "You must be signed in."
+        case .invalidImage: return "Could not process image."
+        case .cannotAddSelf: return "You can't add yourself as a friend."
+        case .alreadyFriends: return "This angler is already on your friends list."
+        case .requestAlreadySent: return "Friend request already sent."
+        }
+    }
 }
 
 private extension String {

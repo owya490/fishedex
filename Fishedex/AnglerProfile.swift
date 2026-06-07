@@ -1,6 +1,6 @@
 import Foundation
 
-struct ProfileRow: Codable, Identifiable {
+struct ProfileRow: Codable, Identifiable, Hashable {
     let id: UUID
     var displayName: String?
     var avatarUrl: String?
@@ -142,6 +142,49 @@ struct UserAchievementRow: Codable, Identifiable {
         case achievementId = "achievement_id"
         case unlockedAt = "unlocked_at"
     }
+}
+
+enum FriendshipStatus: String, Codable {
+    case pending
+    case accepted
+}
+
+struct FriendshipRow: Codable, Identifiable {
+    let id: UUID
+    let userId: UUID
+    let friendId: UUID
+    let status: FriendshipStatus
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case friendId = "friend_id"
+        case status
+        case createdAt = "created_at"
+    }
+}
+
+struct FriendSummary: Identifiable, Hashable {
+    let friendshipId: UUID
+    let profile: ProfileRow
+    let status: FriendshipStatus
+
+    var id: UUID { profile.id }
+}
+
+struct FriendRequest: Identifiable, Hashable {
+    let friendshipId: UUID
+    let requester: ProfileRow
+
+    var id: UUID { friendshipId }
+}
+
+enum FriendshipRelation {
+    case none
+    case accepted
+    case outgoingPending(friendshipId: UUID)
+    case incomingPending(friendshipId: UUID)
 }
 
 struct AnglerStats {

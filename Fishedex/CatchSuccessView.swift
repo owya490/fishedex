@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import UIKit
 
 private enum CatchSuccessStep {
     case reveal
@@ -33,6 +34,7 @@ struct CatchSuccessView: View {
     @State private var bait = ""
     @State private var notes = ""
     @State private var saveError: String?
+    @State private var skipSpeciesSearchValidation = false
 
     init(
         capturedImage: UIImage,
@@ -215,7 +217,12 @@ struct CatchSuccessView: View {
                     .submitLabel(.done)
                     .onSubmit { speciesFieldFocused = false }
                     .onChange(of: speciesSearch) { _, newValue in
-                        if let fish = selectedFish, newValue != fish.name {
+                        if skipSpeciesSearchValidation {
+                            skipSpeciesSearchValidation = false
+                            return
+                        }
+                        if let fish = selectedFish,
+                           newValue.compare(fish.name, options: .caseInsensitive) != .orderedSame {
                             selectedSpeciesID = nil
                         }
                     }
@@ -327,7 +334,8 @@ struct CatchSuccessView: View {
             AppHeaderView(
                 onBack: { step = .reveal; showPixelArt = false },
                 showsProfileButton: false,
-                showsProfileAvatar: false
+                showsProfileAvatar: false,
+                isBackDisabled: session.isLoggingCatch
             )
 
             ScrollView {
@@ -476,9 +484,11 @@ struct CatchSuccessView: View {
     // MARK: - Actions
 
     private func selectSpecies(_ fish: Fish) {
+        skipSpeciesSearchValidation = true
         selectedSpeciesID = fish.id
         speciesSearch = fish.name
         speciesFieldFocused = false
+        dismissKeyboard()
     }
 
     private func advanceToDetails() {
@@ -503,8 +513,19 @@ struct CatchSuccessView: View {
         }
     }
 
+    private func dismissKeyboard() {
+        speciesFieldFocused = false
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil
+        )
+    }
+
     private func saveCatch() {
         saveError = nil
+        dismissKeyboard()
 
         let input = LogCatchInput(
             speciesId: selectedSpeciesID,

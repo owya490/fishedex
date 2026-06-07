@@ -597,14 +597,15 @@ private struct DexCatchFactLine: View {
             Text(label)
                 .font(FishedexFont.micro)
                 .foregroundStyle(FishedexTheme.muted)
-                .frame(width: 64, alignment: .leading)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
 
             Text(value.uppercased())
                 .font(FishedexFont.caption)
                 .foregroundStyle(FishedexTheme.ink)
+                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

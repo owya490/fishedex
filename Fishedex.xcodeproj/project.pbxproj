@@ -29,6 +29,7 @@
 		HH1111112C80000100B1A001 /* UserStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = HH2222222C80000100B1A001 /* UserStorage.swift */; };
 		HH3333332C80000100B1A001 /* ImageCompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = HH4444442C80000100B1A001 /* ImageCompressor.swift */; };
 		HH5555552C80000100B1A001 /* PhotoGalleryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = HH6666662C80000100B1A001 /* PhotoGalleryViews.swift */; };
+		HH7777772C80000100B1A001 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = HH8888882C80000100B1A001 /* ImageCache.swift */; };
 		EE1A4C9B2C80000100B1A002 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = EE1A4C9A2C80000100B1A001 /* Supabase */; };
 		EE3333332C80000100B1A001 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE4444442C80000100B1A001 /* SessionManager.swift */; };
 		EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6666662C80000100B1A001 /* AnglerProfile.swift */; };
@@ -39,6 +40,8 @@
 		GG3333332C80000100B1A001 /* AchievementLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG4444442C80000100B1A001 /* AchievementLogic.swift */; };
 		GG5555552C80000100B1A001 /* AchievementEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG6666662C80000100B1A001 /* AchievementEvaluator.swift */; };
 		GG7777772C80000100B1A001 /* FirstCatchAchievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG8888882C80000100B1A001 /* FirstCatchAchievement.swift */; };
+		II1111112C80000100B1A001 /* FriendProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = II2222222C80000100B1A001 /* FriendProfileView.swift */; };
+		II3333332C80000100B1A001 /* FriendsSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = II4444442C80000100B1A001 /* FriendsSectionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -66,10 +69,13 @@
 		HH2222222C80000100B1A001 /* UserStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStorage.swift; sourceTree = "<group>"; };
 		HH4444442C80000100B1A001 /* ImageCompressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCompressor.swift; sourceTree = "<group>"; };
 		HH6666662C80000100B1A001 /* PhotoGalleryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGalleryViews.swift; sourceTree = "<group>"; };
+		HH8888882C80000100B1A001 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		EE4444442C80000100B1A001 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		EE6666662C80000100B1A001 /* AnglerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnglerProfile.swift; sourceTree = "<group>"; };
 		EE8888882C80000100B1A001 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		EEAAAAAA2C80000100B1A001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		II2222222C80000100B1A001 /* FriendProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendProfileView.swift; sourceTree = "<group>"; };
+		II4444442C80000100B1A001 /* FriendsSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsSectionView.swift; sourceTree = "<group>"; };
 		FF2222222C80000100B1A001 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandingView.swift; sourceTree = "<group>"; };
 		GG2222222C80000100B1A001 /* AchievementContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementContext.swift; sourceTree = "<group>"; };
 		GG4444442C80000100B1A001 /* AchievementLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementLogic.swift; sourceTree = "<group>"; };
@@ -136,6 +142,7 @@
 				EE2222222C80000100B1A001 /* SupabaseClient.swift */,
 				HH2222222C80000100B1A001 /* UserStorage.swift */,
 				HH4444442C80000100B1A001 /* ImageCompressor.swift */,
+				HH8888882C80000100B1A001 /* ImageCache.swift */,
 				HH6666662C80000100B1A001 /* PhotoGalleryViews.swift */,
 				EE4444442C80000100B1A001 /* SessionManager.swift */,
 				GGAAAAAA2C80000100B1A001 /* Achievements */,
@@ -143,6 +150,8 @@
 				EE8888882C80000100B1A001 /* AuthView.swift */,
 				FF2222222C80000100B1A001 /* LandingView.swift */,
 				EEAAAAAA2C80000100B1A001 /* ProfileView.swift */,
+				II2222222C80000100B1A001 /* FriendProfileView.swift */,
+				II4444442C80000100B1A001 /* FriendsSectionView.swift */,
 				0F1A4C8F2C80000100B1A001 /* ContentView.swift */,
 				0F1A4C9A2C80000100B1A001 /* Fish.swift */,
 				0F1A4C9B2C80000100B1A001 /* FishedexTheme.swift */,
@@ -263,12 +272,15 @@
 				EE1111112C80000100B1A001 /* SupabaseClient.swift in Sources */,
 				HH1111112C80000100B1A001 /* UserStorage.swift in Sources */,
 				HH3333332C80000100B1A001 /* ImageCompressor.swift in Sources */,
+				HH7777772C80000100B1A001 /* ImageCache.swift in Sources */,
 				HH5555552C80000100B1A001 /* PhotoGalleryViews.swift in Sources */,
 				EE3333332C80000100B1A001 /* SessionManager.swift in Sources */,
 				EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */,
 				EE7777772C80000100B1A001 /* AuthView.swift in Sources */,
 				FF1111112C80000100B1A001 /* LandingView.swift in Sources */,
 				EE9999992C80000100B1A001 /* ProfileView.swift in Sources */,
+				II1111112C80000100B1A001 /* FriendProfileView.swift in Sources */,
+				II3333332C80000100B1A001 /* FriendsSectionView.swift in Sources */,
 				GG1111112C80000100B1A001 /* AchievementContext.swift in Sources */,
 				GG3333332C80000100B1A001 /* AchievementLogic.swift in Sources */,
 				GG5555552C80000100B1A001 /* AchievementEvaluator.swift in Sources */,

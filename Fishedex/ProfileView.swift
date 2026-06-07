@@ -5,26 +5,34 @@ struct ProfileView: View {
     @EnvironmentObject private var session: SessionManager
 
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var selectedFriendId: UUID?
 
     private var profile: ProfileRow? { session.profile }
     private var stats: AnglerStats { session.stats }
 
     var body: some View {
-        VStack(spacing: 0) {
-            AppHeaderView(onBack: { session.showProfile = false }, showsProfileButton: false)
+        NavigationStack {
+            VStack(spacing: 0) {
+                AppHeaderView(onBack: { session.showProfile = false }, showsProfileButton: false)
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    identityCard
-                    collectionCard
-                    achievementsSection
-                    signOutButton
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        identityCard
+                        collectionCard
+                        FriendsSectionView(selectedFriendId: $selectedFriendId)
+                        achievementsSection
+                        signOutButton
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 20)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 20)
+            }
+            .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
+            .navigationDestination(item: $selectedFriendId) { friendId in
+                FriendProfileView(friendId: friendId)
+                    .environmentObject(session)
             }
         }
-        .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
             Task { await handlePhotoSelection(item) }
@@ -247,15 +255,13 @@ struct ProfileAvatarView: View {
 
     var body: some View {
         Group {
-            if let urlString, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                    default:
-                        placeholder
-                    }
-                }
+            if urlString != nil {
+                CachedRemoteImage(
+                    urlString: urlString,
+                    content: { $0.resizable().scaledToFill() },
+                    placeholder: { placeholder },
+                    failure: { placeholder }
+                )
             } else {
                 placeholder
             }

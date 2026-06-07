@@ -132,20 +132,18 @@ private struct ZoomablePhotoView: View {
 
     var body: some View {
         Group {
-            if let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
+            if !urlString.isEmpty {
+                CachedRemoteImage(
+                    urlString: urlString,
+                    content: {
+                        $0
                             .resizable()
                             .scaledToFit()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    case .failure:
-                        placeholder
-                    default:
-                        ProgressView().tint(.white)
-                    }
-                }
+                    },
+                    placeholder: { ProgressView().tint(.white) },
+                    failure: { placeholder }
+                )
             } else {
                 placeholder
             }

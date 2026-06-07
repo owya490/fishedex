@@ -353,22 +353,18 @@ struct CatchPhotoView: View {
 
     var body: some View {
         Group {
-            if let urlString, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
+            if urlString != nil {
+                CachedRemoteImage(
+                    urlString: urlString,
+                    content: {
+                        $0
                             .resizable()
                             .scaledToFill()
                             .transition(.opacity)
-                    case .failure:
-                        photoUnavailablePlaceholder
-                    case .empty:
-                        loadingPlaceholder
-                    @unknown default:
-                        loadingPlaceholder
-                    }
-                }
+                    },
+                    placeholder: { loadingPlaceholder },
+                    failure: { photoUnavailablePlaceholder }
+                )
             } else {
                 noPhotoPlaceholder
             }

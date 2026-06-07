@@ -18,6 +18,7 @@ struct FishedexBackButton: View {
     var style: Style = .header
     var size: CGFloat = 32
     var iconSize: CGFloat = 14
+    var isDisabled: Bool = false
 
     var body: some View {
         Button(action: action) {
@@ -30,6 +31,8 @@ struct FishedexBackButton: View {
                 .fishedexCircleBorder(lineWidth: 2, color: .black)
         }
         .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.35 : 1)
         .accessibilityLabel("Go back")
     }
 }
