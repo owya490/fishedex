@@ -131,18 +131,6 @@ private struct DashboardBannerCarousel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if page == 0 {
-                Text(location.dateLabel)
-                    .font(FishedexFont.caption)
-                    .foregroundStyle(FishedexTheme.muted)
-                    .kerning(0.6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 18)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
-                    .transition(.opacity)
-            }
-
             TabView(selection: $page) {
                 WeatherInfoBanner(location: location)
                     .tag(0)
@@ -170,7 +158,6 @@ private struct DashboardBannerCarousel: View {
             .padding(.bottom, 6)
         }
         .background(Color.white)
-        .animation(.easeInOut(duration: 0.45), value: page)
         .onAppear { startCarousel() }
         .onDisappear { carouselTimer = nil }
     }
@@ -194,14 +181,14 @@ private struct WeatherInfoBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Image(systemName: location.weatherIcon)
+                Image(systemName: "calendar")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(FishedexTheme.ocean)
 
-                Text("FISHING CONDITIONS")
+                Text(location.dateLabel)
                     .font(FishedexFont.caption)
                     .foregroundStyle(FishedexTheme.muted)
-                    .kerning(0.8)
+                    .kerning(0.6)
 
                 Spacer()
 
