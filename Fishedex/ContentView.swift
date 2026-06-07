@@ -19,7 +19,7 @@ struct ContentView: View {
         case .map:
             MapTabView(fish: fish)
         case .catch_:
-            CatchView()
+            CatchView(onBack: { selectedTab = .map })
         case .dex:
             DexView(fish: fish)
         }

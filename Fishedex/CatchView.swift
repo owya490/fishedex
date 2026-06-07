@@ -3,12 +3,13 @@ import SwiftUI
 // MARK: - Catch Tab (full-screen camera UI)
 
 struct CatchView: View {
+    let onBack: () -> Void
     @State private var fishDetected = true
 
     var body: some View {
         ZStack {
             CameraBackground()
-            CameraOverlay(fishDetected: $fishDetected)
+            CameraOverlay(fishDetected: $fishDetected, onBack: onBack)
         }
         .ignoresSafeArea()
     }
@@ -51,6 +52,7 @@ private struct CameraBackground: View {
 
 private struct CameraOverlay: View {
     @Binding var fishDetected: Bool
+    let onBack: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -73,6 +75,8 @@ private struct CameraOverlay: View {
 
     private var topBar: some View {
         HStack {
+            BackButton(action: onBack)
+            Spacer()
             ContextChip()
             Spacer()
             SettingsButton()
@@ -117,6 +121,24 @@ private struct SettingsButton: View {
     var body: some View {
         Button {} label: {
             Image(systemName: "gearshape.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(.black.opacity(0.55))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Back button
+
+private struct BackButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.left")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
