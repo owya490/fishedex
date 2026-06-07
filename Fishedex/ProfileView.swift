@@ -1,15 +1,17 @@
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @EnvironmentObject private var session: SessionManager
-    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedPhoto: PhotosPickerItem?
 
     private var profile: ProfileRow? { session.profile }
     private var stats: AnglerStats { session.stats }
 
     var body: some View {
         VStack(spacing: 0) {
-            AppHeaderView(onBack: { dismiss() }, showsProfileButton: false)
+            AppHeaderView(onBack: { session.showProfile = false }, showsProfileButton: false)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
@@ -23,12 +25,45 @@ struct ProfileView: View {
             }
         }
         .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
+        .onChange(of: selectedPhoto) { _, item in
+            guard let item else { return }
+            Task { await handlePhotoSelection(item) }
+        }
     }
 
     private var identityCard: some View {
         VStack(spacing: 0) {
-            ProfileAvatarView(urlString: profile?.avatarUrl, size: 180)
-                .padding(.top, 20)
+            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                ZStack(alignment: .bottomTrailing) {
+                    ProfileAvatarView(urlString: profile?.avatarUrl, size: 180)
+
+                    ZStack {
+                        Color.black.opacity(0.65)
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                    .frame(width: 36, height: 36)
+                    .fishedexSquare()
+                    .fishedexBorder(lineWidth: 1, color: .white.opacity(0.8))
+                    .offset(x: 6, y: 6)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(session.isUploadingAvatar)
+            .overlay {
+                if session.isUploadingAvatar {
+                    ZStack {
+                        Color.black.opacity(0.35)
+                        ProgressView()
+                            .tint(.white)
+                    }
+                    .frame(width: 180, height: 180)
+                    .fishedexSquare()
+                }
+            }
+            .padding(.top, 20)
+            .padding(.bottom, 14)
 
             Text((profile?.rankLabel ?? "NOVICE ANGLER").uppercased())
                 .font(FishedexFont.caption)
@@ -193,6 +228,17 @@ struct ProfileView: View {
     private func formattedWeight(_ lbs: Double) -> String {
         if lbs <= 0 { return "0 LBS" }
         return "\(Int(lbs.rounded()).formatted()) LBS"
+    }
+
+    private func handlePhotoSelection(_ item: PhotosPickerItem) async {
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            let contentType = item.supportedContentTypes.first?.preferredMIMEType ?? "image/jpeg"
+            await session.uploadAvatar(imageData: data, contentType: contentType)
+            selectedPhoto = nil
+        } catch {
+            session.errorMessage = error.localizedDescription
+        }
     }
 }
 

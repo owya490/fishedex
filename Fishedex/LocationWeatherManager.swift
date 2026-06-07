@@ -14,6 +14,8 @@ final class LocationWeatherManager: NSObject, ObservableObject {
     @Published var weatherLabel = "LOCATING..."
     @Published var weatherIcon  = "location.fill"
 
+    @Published var userCoordinate: CLLocationCoordinate2D?
+
     private let locationManager = CLLocationManager()
     private var timer: AnyCancellable?
     private var lastFetchLocation: CLLocation?
@@ -117,6 +119,9 @@ final class LocationWeatherManager: NSObject, ObservableObject {
 extension LocationWeatherManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
+        DispatchQueue.main.async {
+            self.userCoordinate = loc.coordinate
+        }
         // Only re-fetch if moved more than 5 km
         if let prev = lastFetchLocation, prev.distance(from: loc) < 5_000 { return }
         lastFetchLocation = loc

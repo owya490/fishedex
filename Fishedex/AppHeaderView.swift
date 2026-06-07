@@ -8,7 +8,7 @@ struct AppHeaderView: View {
     var showsProfileButton: Bool = true
     var showsProfileAvatar: Bool = true
 
-    private let slotSize: CGFloat = 36
+    private let slotSize: CGFloat = 32
     private let iconSize: CGFloat = 48
 
     var body: some View {
@@ -29,8 +29,7 @@ struct AppHeaderView: View {
                 .frame(width: showsProfileAvatar ? slotSize : leadingSlotSize, height: showsProfileAvatar ? slotSize : leadingSlotSize)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 2)
-        .padding(.bottom, 6)
+        .padding(.vertical, 2)
         .background(FishedexTheme.headerRed)
     }
 
@@ -41,23 +40,15 @@ struct AppHeaderView: View {
     @ViewBuilder
     private var leadingSlot: some View {
         if let onBack {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: slotSize, height: slotSize)
-                    .background(Color.black.opacity(0.25))
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(.black, lineWidth: 2))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Go back")
+            FishedexBackButton(action: onBack, style: .header, size: slotSize)
         } else {
             Image("FishedexIcon")
                 .resizable()
                 .interpolation(.none)
                 .scaledToFit()
+                .frame(width: iconSize * 1.2, height: iconSize * 1.2)
                 .frame(width: iconSize, height: iconSize)
+                .clipped()
                 .accessibilityHidden(true)
         }
     }

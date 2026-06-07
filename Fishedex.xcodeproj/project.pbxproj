@@ -20,15 +20,16 @@
 		BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222C80000100B1A001 /* FishingSpot.swift */; };
 		BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444442C80000100B1A001 /* AppHeaderView.swift */; };
 		BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6666662C80000100B1A001 /* CustomTabBar.swift */; };
+		BB7777772C80000100B1A001 /* FishedexBackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8888882C80000100B1A001 /* FishedexBackButton.swift */; };
 		CC1111112C80000100B1A001 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2222222C80000100B1A001 /* CameraManager.swift */; };
 		DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2222222C80000100B1A001 /* LocationWeatherManager.swift */; };
 		EE1111112C80000100B1A001 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2222222C80000100B1A001 /* SupabaseClient.swift */; };
+		EE1A4C9B2C80000100B1A002 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = EE1A4C9A2C80000100B1A001 /* Supabase */; };
 		EE3333332C80000100B1A001 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE4444442C80000100B1A001 /* SessionManager.swift */; };
 		EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6666662C80000100B1A001 /* AnglerProfile.swift */; };
 		EE7777772C80000100B1A001 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8888882C80000100B1A001 /* AuthView.swift */; };
-		FF1111112C80000100B1A001 /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2222222C80000100B1A001 /* LandingView.swift */; };
 		EE9999992C80000100B1A001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAAAAAA2C80000100B1A001 /* ProfileView.swift */; };
-		EE1A4C9B2C80000100B1A002 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = EE1A4C9A2C80000100B1A001 /* Supabase */; };
+		FF1111112C80000100B1A001 /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2222222C80000100B1A001 /* LandingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,14 +48,15 @@
 		BB2222222C80000100B1A001 /* FishingSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpot.swift; sourceTree = "<group>"; };
 		BB4444442C80000100B1A001 /* AppHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHeaderView.swift; sourceTree = "<group>"; };
 		BB6666662C80000100B1A001 /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
+		BB8888882C80000100B1A001 /* FishedexBackButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishedexBackButton.swift; sourceTree = "<group>"; };
 		CC2222222C80000100B1A001 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		DD2222222C80000100B1A001 /* LocationWeatherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationWeatherManager.swift; sourceTree = "<group>"; };
 		EE2222222C80000100B1A001 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		EE4444442C80000100B1A001 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		EE6666662C80000100B1A001 /* AnglerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnglerProfile.swift; sourceTree = "<group>"; };
 		EE8888882C80000100B1A001 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
-		FF2222222C80000100B1A001 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandingView.swift; sourceTree = "<group>"; };
 		EEAAAAAA2C80000100B1A001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		FF2222222C80000100B1A001 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -105,6 +107,7 @@
 				0F1A4C9B2C80000100B1A001 /* FishedexTheme.swift */,
 				BB2222222C80000100B1A001 /* FishingSpot.swift */,
 				BB4444442C80000100B1A001 /* AppHeaderView.swift */,
+				BB8888882C80000100B1A001 /* FishedexBackButton.swift */,
 				BB6666662C80000100B1A001 /* CustomTabBar.swift */,
 				0F1A4C9C2C80000100B1A001 /* FishArtworkView.swift */,
 				0F1A4C9D2C80000100B1A001 /* DashboardView.swift */,
@@ -134,13 +137,13 @@
 			);
 			dependencies = (
 			);
-			packageProductDependencies = (
-				EE1A4C9A2C80000100B1A001 /* Supabase */,
-			);
 			fileSystemSynchronizedGroups = (
 				A89AE23B2FD5C556007A0E46 /* fonts */,
 			);
 			name = Fishedex;
+			packageProductDependencies = (
+				EE1A4C9A2C80000100B1A001 /* Supabase */,
+			);
 			productName = Fishedex;
 			productReference = 0F1A4C842C80000100B1A001 /* Fishedex.app */;
 			productType = "com.apple.product-type.application";
@@ -208,6 +211,7 @@
 				0F1A4C8E2C80000100B1A001 /* FishedexApp.swift in Sources */,
 				BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */,
 				BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */,
+				BB7777772C80000100B1A001 /* FishedexBackButton.swift in Sources */,
 				BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */,
 				CC1111112C80000100B1A001 /* CameraManager.swift in Sources */,
 				DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */,
@@ -230,7 +234,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = HFYVQ37R55;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Fishedex/Info.plist;
@@ -265,7 +269,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = HFYVQ37R55;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Fishedex/Info.plist;

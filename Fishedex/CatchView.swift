@@ -114,7 +114,7 @@ private struct CameraHUD: View {
 
     private var topBar: some View {
         HStack(alignment: .center, spacing: 10) {
-            PixelButton(systemIcon: "chevron.left", action: onBack)
+            FishedexBackButton(action: onBack, style: .overlay, size: 44, iconSize: 17)
 
             Spacer()
 
@@ -147,26 +147,6 @@ private struct CameraHUD: View {
                     .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
             }
         }
-    }
-}
-
-// MARK: - Generic pixel icon button
-
-private struct PixelButton: View {
-    let systemIcon: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemIcon)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(.black.opacity(0.65))
-                .fishedexSquare()
-                .fishedexBorder()
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -295,23 +275,17 @@ private struct PixelFishingRodButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle()
-                    .fill(isCapturing
-                          ? Color(red: 0.86, green: 0.86, blue: 0.87)
-                          : .white)
-                    .frame(width: size, height: size)
+                Color.white.opacity(isCapturing ? 0.12 : 0.22)
 
                 Image("PixelFishingRod")
                     .resizable()
                     .interpolation(.none)
                     .scaledToFit()
-                    .frame(width: size * 0.62, height: size * 0.62)
-
-                Circle()
-                    .stroke(Color.black, lineWidth: 4)
-                    .frame(width: size, height: size)
+                    .padding(size * 0.16)
             }
             .frame(width: size, height: size)
+            .fishedexCircle()
+            .fishedexCircleBorder(lineWidth: 2, color: .black)
         }
         .buttonStyle(.plain)
         .disabled(isCapturing)

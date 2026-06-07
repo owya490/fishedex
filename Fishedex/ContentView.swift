@@ -14,16 +14,11 @@ struct ContentView: View {
     var body: some View {
         Group {
             if session.isLoading {
-                loadingView
-            } else if session.isAuthenticated {
+                loadingView            } else if session.isAuthenticated {
                 authenticatedContent
             } else {
                 unauthenticatedContent
             }
-        }
-        .sheet(isPresented: $session.showProfile) {
-            ProfileView()
-                .environmentObject(session)
         }
     }
 
@@ -55,12 +50,21 @@ struct ContentView: View {
     }
 
     private var authenticatedContent: some View {
-        tabContent
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if selectedTab != .catch_ {
-                    CustomTabBar(selectedTab: $selectedTab)
-                }
+        ZStack {
+            tabContent
+
+            if session.showProfile {
+                ProfileView()
+                    .environmentObject(session)
+                    .transition(.move(edge: .trailing))
             }
+        }
+        .animation(.easeInOut(duration: 0.25), value: session.showProfile)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if selectedTab != .catch_ && !session.showProfile {
+                CustomTabBar(selectedTab: $selectedTab)
+            }
+        }
     }
 
     @ViewBuilder

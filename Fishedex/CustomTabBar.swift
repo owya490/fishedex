@@ -33,9 +33,10 @@ struct CustomTabBar: View {
             ) { selectedTab = .dex }
         }
         .padding(.horizontal, 12)
-        .padding(.top, 10)
-        .padding(.bottom, 8)
+        .padding(.top, 6)
+        .padding(.bottom, 6)
         .background(Color(red: 0.92, green: 0.92, blue: 0.93))
+        .ignoresSafeArea(edges: .bottom)
     }
 }
 
@@ -74,7 +75,7 @@ private struct TabBarButton: View {
                     .foregroundStyle(isActive ? .white : FishedexTheme.muted)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 64)
+            .frame(height: 56)
             .background(isActive ? activeColor : Color.white)
             .fishedexSquare()
             .fishedexBorder()

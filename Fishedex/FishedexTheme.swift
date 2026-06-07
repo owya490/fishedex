@@ -61,10 +61,129 @@ extension View {
         overlay(Rectangle().stroke(color, lineWidth: lineWidth))
     }
 
+    func fishedexCircle() -> some View {
+        clipShape(Circle())
+    }
+
+    func fishedexCircleBorder(lineWidth: CGFloat = 2, color: Color = .black.opacity(0.5)) -> some View {
+        overlay(Circle().stroke(color, lineWidth: lineWidth))
+    }
+
+    func fishedexPixelCircle(pixelSize: CGFloat = 2) -> some View {
+        clipShape(PixelCircleShape(pixelSize: pixelSize))
+    }
+
+    func fishedexPixelCircleBorder(
+        pixelSize: CGFloat = 2,
+        color: Color = .black.opacity(0.55),
+        thickness: CGFloat = 1
+    ) -> some View {
+        overlay {
+            PixelCircleBorder(pixelSize: pixelSize, color: color, thickness: thickness)
+        }
+    }
+
+    /// Stepped pixel-style border — thin outer stroke with corner accents.
+    func fishedexPixelBorder(color: Color = .black.opacity(0.55)) -> some View {
+        overlay {
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                let step: CGFloat = 3
+
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: h - step))
+                    path.addLine(to: CGPoint(x: 0, y: 0))
+                    path.addLine(to: CGPoint(x: w - step, y: 0))
+                    path.move(to: CGPoint(x: w, y: step))
+                    path.addLine(to: CGPoint(x: w, y: h))
+                    path.addLine(to: CGPoint(x: step, y: h))
+                }
+                .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .square, lineJoin: .miter))
+
+                Path { path in
+                    path.move(to: CGPoint(x: w - step, y: 0))
+                    path.addLine(to: CGPoint(x: w, y: 0))
+                    path.addLine(to: CGPoint(x: w, y: step))
+                    path.move(to: CGPoint(x: 0, y: h - step))
+                    path.addLine(to: CGPoint(x: 0, y: h))
+                    path.addLine(to: CGPoint(x: step, y: h))
+                }
+                .stroke(color.opacity(0.35), style: StrokeStyle(lineWidth: 1, lineCap: .square, lineJoin: .miter))
+            }
+        }
+    }
+
     func fishedexCard() -> some View {
         self
             .background(FishedexTheme.card)
             .fishedexSquare()
             .fishedexBorder()
     }
+}
+
+// MARK: - Pixel circle
+
+struct PixelCircleShape: Shape {
+    var pixelSize: CGFloat = 4
+
+    func path(in rect: CGRect) -> Path {
+        pixelCirclePath(in: rect, pixelSize: pixelSize, thickness: nil)
+    }
+}
+
+struct PixelCircleBorder: View {
+    var pixelSize: CGFloat = 4
+    var color: Color = .black.opacity(0.55)
+    var thickness: CGFloat = 1.5
+
+    var body: some View {
+        GeometryReader { geo in
+            Canvas { context, _ in
+                let path = pixelCirclePath(
+                    in: CGRect(origin: .zero, size: geo.size),
+                    pixelSize: pixelSize,
+                    thickness: thickness
+                )
+                context.fill(path, with: .color(color))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private func pixelCirclePath(in rect: CGRect, pixelSize: CGFloat, thickness: CGFloat?) -> Path {
+    let cols = max(1, Int(rect.width / pixelSize))
+    let rows = max(1, Int(rect.height / pixelSize))
+    let centerX = CGFloat(cols) / 2
+    let centerY = CGFloat(rows) / 2
+    let radius = min(centerX, centerY) - 0.5
+    let outerRadiusSq = radius * radius
+    let innerRadiusSq = thickness.map { max($0, 0) }.map { radius - $0 }.map { $0 * $0 }
+
+    var path = Path()
+    for row in 0..<rows {
+        for col in 0..<cols {
+            let dx = CGFloat(col) - centerX + 0.5
+            let dy = CGFloat(row) - centerY + 0.5
+            let distSq = dx * dx + dy * dy
+
+            let include: Bool
+            if let innerRadiusSq {
+                include = distSq <= outerRadiusSq && distSq > innerRadiusSq
+            } else {
+                include = distSq <= outerRadiusSq
+            }
+
+            guard include else { continue }
+
+            path.addRect(CGRect(
+                x: rect.minX + CGFloat(col) * pixelSize,
+                y: rect.minY + CGFloat(row) * pixelSize,
+                width: pixelSize,
+                height: pixelSize
+            ))
+        }
+    }
+    return path
 }

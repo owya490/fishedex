@@ -19,6 +19,7 @@ final class SessionManager: ObservableObject {
     @Published private(set) var achievements: [AchievementRow] = []
     @Published private(set) var unlockedAchievementIDs: Set<Int> = []
     @Published var showProfile = false
+    @Published var isUploadingAvatar = false
     @Published var errorMessage: String? // surfaced on auth + profile screens
 
     private var authListenerTask: Task<Void, Never>?
@@ -59,6 +60,46 @@ final class SessionManager: ObservableObject {
             password: password,
             data: ["display_name": .string(displayName)]
         )
+    }
+
+    func uploadAvatar(imageData: Data, contentType: String = "image/jpeg") async {
+        guard isAuthenticated else { return }
+
+        isUploadingAvatar = true
+        defer { isUploadingAvatar = false }
+
+        do {
+            let userID = try await supabase.auth.session.user.id
+            let ext = contentType.contains("png") ? "png" : "jpg"
+            let path = "\(userID.uuidString)/avatar.\(ext)"
+
+            try await supabase.storage
+                .from("avatars")
+                .upload(
+                    path,
+                    data: imageData,
+                    options: FileOptions(contentType: contentType, upsert: true)
+                )
+
+            let publicURL = try supabase.storage
+                .from("avatars")
+                .getPublicURL(path: path)
+
+            struct AvatarUpdate: Encodable {
+                let avatar_url: String
+            }
+
+            try await supabase
+                .from("profiles")
+                .update(AvatarUpdate(avatar_url: publicURL.absoluteString))
+                .eq("id", value: userID.uuidString)
+                .execute()
+
+            await refreshUserData()
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func signOut() async {

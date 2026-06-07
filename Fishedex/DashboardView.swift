@@ -1,16 +1,23 @@
 import SwiftUI
 import MapKit
+import CoreLocation
+import Combine
 
 // MARK: - Map Tab
+
+private let defaultMapSpan = 0.038
 
 struct MapTabView: View {
     let fish: [Fish]
 
+    @StateObject private var location = LocationWeatherManager()
     @State private var selectedSpot: FishingSpot? = nil
+    @State private var hasCenteredOnUser = false
+    @State private var latitudeDelta = defaultMapSpan
     @State private var cameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: -33.867, longitude: 151.201),
-            span: MKCoordinateSpan(latitudeDelta: 0.038, longitudeDelta: 0.038)
+            span: MKCoordinateSpan(latitudeDelta: defaultMapSpan, longitudeDelta: defaultMapSpan)
         )
     )
 
@@ -26,6 +33,29 @@ struct MapTabView: View {
             mapSection
         }
         .background(Color.white.ignoresSafeArea())
+        .onAppear { location.start() }
+        .onDisappear { location.stop() }
+        .onReceive(location.$userCoordinate) { coordinate in
+            centerOnUserIfNeeded(coordinate)
+        }
+    }
+
+    private var pinZoomScale: CGFloat {
+        let scale = defaultMapSpan / max(latitudeDelta, defaultMapSpan)
+        return CGFloat(min(max(scale, 0.3), 1.0))
+    }
+
+    private func centerOnUserIfNeeded(_ coordinate: CLLocationCoordinate2D?) {
+        guard let coordinate, !hasCenteredOnUser else { return }
+        hasCenteredOnUser = true
+        withAnimation(.easeOut(duration: 0.4)) {
+            cameraPosition = .region(
+                MKCoordinateRegion(
+                    center: coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: defaultMapSpan, longitudeDelta: defaultMapSpan)
+                )
+            )
+        }
     }
 
     // MARK: Map section
@@ -35,7 +65,10 @@ struct MapTabView: View {
             Map(position: $cameraPosition) {
                 ForEach(spots) { spot in
                     Annotation("", coordinate: spot.coordinate) {
-                        FishingSpotPin(isSelected: selectedSpot?.id == spot.id)
+                        FishingSpotPin(
+                            isSelected: selectedSpot?.id == spot.id,
+                            zoomScale: pinZoomScale
+                        )
                             .onTapGesture {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     selectedSpot = selectedSpot?.id == spot.id ? nil : spot
@@ -46,6 +79,9 @@ struct MapTabView: View {
                 UserAnnotation()
             }
             .mapStyle(.standard)
+            .onMapCameraChange(frequency: .continuous) { context in
+                latitudeDelta = context.region.span.latitudeDelta
+            }
             .onTapGesture {
                 withAnimation { selectedSpot = nil }
             }
@@ -91,20 +127,20 @@ private struct CollectionProgressCard: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text(String(format: "%.1f%%", progress * 100))
-                    .font(FishedexFont.pokemon(28))
+                    .font(FishedexFont.pokemon(22))
                     .foregroundStyle(FishedexTheme.ink)
 
                 Spacer()
 
                 Text("\(caughtCount) / \(total) FISH")
                     .font(FishedexFont.subheadline)
-                    .foregroundStyle(FishedexTheme.ocean)
+                    .foregroundStyle(FishedexTheme.muted)
             }
 
             CollectionProgressBlocks(progress: progress)
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 14)
+        .padding(.vertical, 10)
         .background(Color.white)
     }
 }
@@ -133,6 +169,7 @@ private struct CollectionProgressBlocks: View {
 
 private struct FishingSpotPin: View {
     let isSelected: Bool
+    var zoomScale: CGFloat = 1.0
 
     var body: some View {
         ZStack {
@@ -149,7 +186,7 @@ private struct FishingSpotPin: View {
             Rectangle()
                 .stroke(isSelected ? FishedexTheme.ocean : Color.clear, lineWidth: 3)
         )
-        .scaleEffect(isSelected ? 1.15 : 1.0)
+        .scaleEffect((isSelected ? 1.15 : 1.0) * zoomScale)
         .animation(.spring(response: 0.25), value: isSelected)
     }
 }

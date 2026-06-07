@@ -9,12 +9,12 @@ struct DexView: View {
 
     @State private var searchText   = ""
     @State private var dexMode: DexMode = .dex
-    @State private var selectedFish: Fish
+    @State private var selectedFish: Fish?
+    @State private var fishForDetail: Fish?
 
     init(fish: [Fish]) {
         self.fish = fish
-        let first = fish.first(where: \.caught) ?? fish[0]
-        _selectedFish = State(initialValue: first)
+        _selectedFish = State(initialValue: fish.first)
     }
 
     private var displayedFish: [Fish] {
@@ -24,30 +24,45 @@ struct DexView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            AppHeaderView()
+        NavigationStack {
+            VStack(spacing: 0) {
+                AppHeaderView()
 
-            DexSearchBar(text: $searchText)
+                DexSearchBar(text: $searchText)
 
-            DexModeToggle(mode: $dexMode)
+                DexModeToggle(mode: $dexMode)
 
-            HStack(spacing: 0) {
-                DexFishList(
-                    fish: displayedFish,
-                    selectedFish: $selectedFish
-                )
-                .frame(width: 128)
+                HStack(spacing: 0) {
+                    DexFishList(
+                        fish: displayedFish,
+                        selectedFish: $selectedFish
+                    )
+                    .frame(width: 128)
 
-                Rectangle()
-                    .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
-                    .frame(width: 1)
+                    Rectangle()
+                        .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
+                        .frame(width: 1)
 
-                DexDetailPanel(fish: selectedFish)
-                    .frame(maxWidth: .infinity)
+                    if dexMode == .myFish && displayedFish.isEmpty {
+                        DexMyFishEmptyState()
+                            .frame(maxWidth: .infinity)
+                    } else if let selectedFish {
+                        DexDetailPanel(fish: selectedFish) {
+                            fishForDetail = selectedFish
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
+            .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
+            .navigationDestination(item: $fishForDetail) { fish in
+                FishDetailView(fish: fish)
+            }
+            .onChange(of: dexMode) { _, _ in
+                selectedFish = displayedFish.first
+            }
         }
-        .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
     }
 }
 
@@ -114,13 +129,13 @@ private struct DexModeToggle: View {
 
 private struct DexFishList: View {
     let fish: [Fish]
-    @Binding var selectedFish: Fish
+    @Binding var selectedFish: Fish?
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(spacing: 6) {
                 ForEach(fish) { f in
-                    DexFishCell(fish: f, isSelected: selectedFish.id == f.id)
+                    DexFishCell(fish: f, isSelected: selectedFish?.id == f.id)
                         .onTapGesture {
                             withAnimation(.easeInOut(duration: 0.15)) {
                                 selectedFish = f
@@ -179,16 +194,14 @@ private struct DexFishCell: View {
 
 private struct DexDetailPanel: View {
     let fish: Fish
+    let onOpenDetail: () -> Void
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                decorativeDots
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-
                 artworkCard
-                    .padding(.vertical, 8)
+                    .padding(.top, 14)
+                    .padding(.bottom, 8)
 
                 infoBlock
                     .padding(.horizontal, 16)
@@ -196,15 +209,6 @@ private struct DexDetailPanel: View {
             }
         }
         .background(Color.white)
-    }
-
-    // Three coloured macOS-style dots for visual flourish
-    private var decorativeDots: some View {
-        HStack(spacing: 6) {
-            Rectangle().fill(Color(red: 0.94, green: 0.35, blue: 0.32)).frame(width: 10, height: 10)
-            Rectangle().fill(Color(red: 0.95, green: 0.70, blue: 0.22)).frame(width: 10, height: 10)
-            Rectangle().fill(Color(red: 0.28, green: 0.78, blue: 0.36)).frame(width: 10, height: 10)
-        }
     }
 
     private var artworkCard: some View {
@@ -223,15 +227,20 @@ private struct DexDetailPanel: View {
             nameBlock
             factGrid
             descriptionText
+            detailButton
         }
     }
 
     private var nameBlock: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(fish.name.uppercased())
-                .font(FishedexFont.title2)
-                .foregroundStyle(FishedexTheme.ink)
-                .fixedSize(horizontal: false, vertical: true)
+            Button(action: onOpenDetail) {
+                Text(fish.name.uppercased())
+                    .font(FishedexFont.title2)
+                    .foregroundStyle(FishedexTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
 
             Text(fish.number)
                 .font(FishedexFont.subheadline)
@@ -240,31 +249,7 @@ private struct DexDetailPanel: View {
     }
 
     private var factGrid: some View {
-        LazyVGrid(
-            columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-            spacing: 8
-        ) {
-            FactCard(label: "RARITY") {
-                StarRating(stars: fish.rarityStars)
-            }
-            FactCard(label: "AVG. WEIGHT") {
-                Text(fish.avgWeight)
-                    .font(FishedexFont.body)
-                    .foregroundStyle(FishedexTheme.ink)
-            }
-            FactCard(label: "PREF. BAIT") {
-                Text(fish.prefBait.uppercased())
-                    .font(FishedexFont.body)
-                    .foregroundStyle(FishedexTheme.ink)
-            }
-            FactCard(label: "LOCATION") {
-                Text(fish.location.uppercased())
-                    .font(FishedexFont.body)
-                    .foregroundStyle(FishedexTheme.ink)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.75)
-            }
-        }
+        DexFactPair(rarityStars: fish.rarityStars, prefBait: fish.prefBait)
     }
 
     private var descriptionText: some View {
@@ -273,34 +258,93 @@ private struct DexDetailPanel: View {
             .foregroundStyle(FishedexTheme.muted)
             .fixedSize(horizontal: false, vertical: true)
     }
+
+    private var detailButton: some View {
+        Button(action: onOpenDetail) {
+            Text("VIEW DETAILS")
+                .font(FishedexFont.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(FishedexTheme.tabBlue)
+                .fishedexSquare()
+                .fishedexBorder()
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
+    }
 }
 
-// MARK: - Fact card
+// MARK: - Unified fact pair
 
-private struct FactCard<Content: View>: View {
-    let label: String
-    let content: Content
+private struct DexFactPair: View {
+    let rarityStars: Int
+    let prefBait: String
 
-    init(label: String, @ViewBuilder content: () -> Content) {
-        self.label   = label
-        self.content = content()
-    }
+    private let cellBackground = Color(red: 0.95, green: 0.95, blue: 0.96)
+    private let dividerColor = Color(red: 0.86, green: 0.86, blue: 0.87)
 
     var body: some View {
+        HStack(spacing: 0) {
+            factCell(label: "RARITY") {
+                StarRating(stars: rarityStars)
+            }
+
+            Rectangle()
+                .fill(dividerColor)
+                .frame(width: 1)
+
+            factCell(label: "PREF. BAIT") {
+                Text(prefBait.uppercased())
+                    .font(FishedexFont.body)
+                    .foregroundStyle(FishedexTheme.ink)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(height: 58)
+        .background(cellBackground)
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: 1)
+    }
+
+    private func factCell<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(FishedexFont.micro)
                 .foregroundStyle(FishedexTheme.muted)
                 .kerning(0.4)
 
-            content
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
-        .fishedexSquare()
-        .fishedexBorder(lineWidth: 1)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - My Fish empty state
+
+private struct DexMyFishEmptyState: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "fish")
+                .font(.system(size: 36, weight: .semibold))
+                .foregroundStyle(FishedexTheme.muted.opacity(0.45))
+
+            Text("Catch your first fish!")
+                .font(FishedexFont.headline)
+                .foregroundStyle(FishedexTheme.ink)
+
+            Text("Head to Catch and log a fish to start your collection.")
+                .font(FishedexFont.caption)
+                .foregroundStyle(FishedexTheme.muted)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 24)
     }
 }
 
