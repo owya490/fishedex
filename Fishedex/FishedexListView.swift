@@ -62,18 +62,15 @@ private struct DexSearchBar: View {
                 .foregroundStyle(FishedexTheme.muted)
 
             TextField("Search Dex...", text: $text)
-                .font(.subheadline.weight(.semibold))
+                .font(FishedexFont.subheadline)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
         }
         .padding(.horizontal, 16)
         .frame(height: 46)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color(red: 0.84, green: 0.84, blue: 0.85), lineWidth: 1)
-        )
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: 1)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(Color(red: 0.95, green: 0.95, blue: 0.96))
@@ -91,7 +88,8 @@ private struct DexModeToggle: View {
             modeButton("MY FISH",  target: .myFish)
         }
         .background(Color(red: 0.86, green: 0.86, blue: 0.87))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .fishedexSquare()
+        .fishedexBorder()
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
         .background(Color(red: 0.95, green: 0.95, blue: 0.96))
@@ -100,12 +98,13 @@ private struct DexModeToggle: View {
     private func modeButton(_ title: String, target: DexMode) -> some View {
         Button { mode = target } label: {
             Text(title)
-                .font(.subheadline.weight(.bold))
+                .font(FishedexFont.subheadline)
                 .foregroundStyle(mode == target ? .white : FishedexTheme.muted)
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)
                 .background(mode == target ? FishedexTheme.tabBlue : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .fishedexSquare()
+                .fishedexBorder(lineWidth: 1)
         }
         .buttonStyle(.plain)
     }
@@ -155,7 +154,7 @@ private struct DexFishCell: View {
             .padding(.top, 4)
 
             Text(fish.caught ? fish.name.uppercased() : "???")
-                .font(.system(size: 9, weight: .bold))
+                .font(FishedexFont.micro)
                 .foregroundStyle(isSelected ? .white : FishedexTheme.ink)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
@@ -166,19 +165,13 @@ private struct DexFishCell: View {
         .padding(.horizontal, 4)
         .overlay(alignment: .topLeading) {
             Text(fish.number)
-                .font(.system(size: 8, weight: .bold))
+                .font(FishedexFont.micro)
                 .foregroundStyle(isSelected ? .white.opacity(0.80) : FishedexTheme.muted)
                 .padding(5)
         }
         .background(isSelected ? FishedexTheme.ocean : Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(
-                    isSelected ? FishedexTheme.ocean : Color(red: 0.80, green: 0.80, blue: 0.81),
-                    lineWidth: isSelected ? 2 : 1
-                )
-        )
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: isSelected ? 2 : 1)
     }
 }
 
@@ -208,9 +201,9 @@ private struct DexDetailPanel: View {
     // Three coloured macOS-style dots for visual flourish
     private var decorativeDots: some View {
         HStack(spacing: 6) {
-            Circle().fill(Color(red: 0.94, green: 0.35, blue: 0.32)).frame(width: 10, height: 10)
-            Circle().fill(Color(red: 0.95, green: 0.70, blue: 0.22)).frame(width: 10, height: 10)
-            Circle().fill(Color(red: 0.28, green: 0.78, blue: 0.36)).frame(width: 10, height: 10)
+            Rectangle().fill(Color(red: 0.94, green: 0.35, blue: 0.32)).frame(width: 10, height: 10)
+            Rectangle().fill(Color(red: 0.95, green: 0.70, blue: 0.22)).frame(width: 10, height: 10)
+            Rectangle().fill(Color(red: 0.28, green: 0.78, blue: 0.36)).frame(width: 10, height: 10)
         }
     }
 
@@ -219,7 +212,7 @@ private struct DexDetailPanel: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                Rectangle()
                     .fill(FishedexTheme.accent(for: fish).opacity(0.08))
                     .padding(.horizontal, 14)
             )
@@ -236,12 +229,12 @@ private struct DexDetailPanel: View {
     private var nameBlock: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(fish.name.uppercased())
-                .font(.system(size: 17, weight: .heavy))
+                .font(FishedexFont.title2)
                 .foregroundStyle(FishedexTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(fish.number)
-                .font(.subheadline.weight(.bold))
+                .font(FishedexFont.subheadline)
                 .foregroundStyle(FishedexTheme.tabBlue)
         }
     }
@@ -256,17 +249,17 @@ private struct DexDetailPanel: View {
             }
             FactCard(label: "AVG. WEIGHT") {
                 Text(fish.avgWeight)
-                    .font(.system(size: 11, weight: .heavy))
+                    .font(FishedexFont.body)
                     .foregroundStyle(FishedexTheme.ink)
             }
             FactCard(label: "PREF. BAIT") {
                 Text(fish.prefBait.uppercased())
-                    .font(.system(size: 11, weight: .heavy))
+                    .font(FishedexFont.body)
                     .foregroundStyle(FishedexTheme.ink)
             }
             FactCard(label: "LOCATION") {
                 Text(fish.location.uppercased())
-                    .font(.system(size: 11, weight: .heavy))
+                    .font(FishedexFont.body)
                     .foregroundStyle(FishedexTheme.ink)
                     .lineLimit(2)
                     .minimumScaleFactor(0.75)
@@ -276,7 +269,7 @@ private struct DexDetailPanel: View {
 
     private var descriptionText: some View {
         Text(fish.about)
-            .font(.caption)
+            .font(FishedexFont.caption)
             .foregroundStyle(FishedexTheme.muted)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -296,7 +289,7 @@ private struct FactCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 8, weight: .bold))
+                .font(FishedexFont.micro)
                 .foregroundStyle(FishedexTheme.muted)
                 .kerning(0.4)
 
@@ -306,11 +299,8 @@ private struct FactCard<Content: View>: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(Color(red: 0.95, green: 0.95, blue: 0.96))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color(red: 0.82, green: 0.82, blue: 0.83), lineWidth: 1)
-        )
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: 1)
     }
 }
 
@@ -330,6 +320,11 @@ private struct StarRating: View {
     }
 }
 
+#Preview {
+    DexView(fish: Fish.samples)
+        .environmentObject(SessionManager())
+}
+
 // MARK: - Shared row used by other screens (kept for compatibility)
 
 struct FishRowView: View {
@@ -338,8 +333,9 @@ struct FishRowView: View {
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                Rectangle()
                     .fill(FishedexTheme.accent(for: fish).opacity(0.16))
+                    .fishedexBorder(lineWidth: 1)
 
                 FishArtworkView(fish: fish, height: 72)
             }
@@ -348,18 +344,18 @@ struct FishRowView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(fish.name)
-                        .font(.headline.weight(.bold))
+                        .font(FishedexFont.headline)
                         .foregroundStyle(FishedexTheme.ink)
 
                     Spacer()
 
                     Text(fish.number)
-                        .font(.caption.weight(.bold))
+                        .font(FishedexFont.caption)
                         .foregroundStyle(FishedexTheme.muted)
                 }
 
                 Text(fish.scientificName)
-                    .font(.caption)
+                    .font(FishedexFont.caption)
                     .italic()
                     .foregroundStyle(FishedexTheme.muted)
 
@@ -373,6 +369,6 @@ struct FishRowView: View {
                 .foregroundStyle(fish.caught ? Color.green : FishedexTheme.muted.opacity(0.55))
         }
         .padding(14)
-        .fishedexCard(cornerRadius: 28)
+        .fishedexCard()
     }
 }

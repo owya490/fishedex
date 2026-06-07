@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -20,6 +20,14 @@
 		BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222C80000100B1A001 /* FishingSpot.swift */; };
 		BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444442C80000100B1A001 /* AppHeaderView.swift */; };
 		BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6666662C80000100B1A001 /* CustomTabBar.swift */; };
+		CC1111112C80000100B1A001 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2222222C80000100B1A001 /* CameraManager.swift */; };
+		DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2222222C80000100B1A001 /* LocationWeatherManager.swift */; };
+		EE1111112C80000100B1A001 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2222222C80000100B1A001 /* SupabaseClient.swift */; };
+		EE3333332C80000100B1A001 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE4444442C80000100B1A001 /* SessionManager.swift */; };
+		EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6666662C80000100B1A001 /* AnglerProfile.swift */; };
+		EE7777772C80000100B1A001 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8888882C80000100B1A001 /* AuthView.swift */; };
+		EE9999992C80000100B1A001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAAAAAA2C80000100B1A001 /* ProfileView.swift */; };
+		EE1A4C9B2C80000100B1A002 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = EE1A4C9A2C80000100B1A001 /* Supabase */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,16 +42,29 @@
 		0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishedexListView.swift; sourceTree = "<group>"; };
 		0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishDetailView.swift; sourceTree = "<group>"; };
 		0F1A4CA62C80000100B1A001 /* CatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchView.swift; sourceTree = "<group>"; };
+		A89AE23A2FD5C47E007A0E46 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BB2222222C80000100B1A001 /* FishingSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpot.swift; sourceTree = "<group>"; };
 		BB4444442C80000100B1A001 /* AppHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHeaderView.swift; sourceTree = "<group>"; };
 		BB6666662C80000100B1A001 /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
+		CC2222222C80000100B1A001 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		DD2222222C80000100B1A001 /* LocationWeatherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationWeatherManager.swift; sourceTree = "<group>"; };
+		EE2222222C80000100B1A001 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
+		EE4444442C80000100B1A001 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
+		EE6666662C80000100B1A001 /* AnglerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnglerProfile.swift; sourceTree = "<group>"; };
+		EE8888882C80000100B1A001 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		EEAAAAAA2C80000100B1A001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A89AE23B2FD5C556007A0E46 /* fonts */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = fonts; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0F1A4C812C80000100B1A001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE1A4C9B2C80000100B1A002 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -69,7 +90,13 @@
 		0F1A4C8C2C80000100B1A001 /* Fishedex */ = {
 			isa = PBXGroup;
 			children = (
+				A89AE23A2FD5C47E007A0E46 /* Info.plist */,
 				0F1A4C8D2C80000100B1A001 /* FishedexApp.swift */,
+				EE2222222C80000100B1A001 /* SupabaseClient.swift */,
+				EE4444442C80000100B1A001 /* SessionManager.swift */,
+				EE6666662C80000100B1A001 /* AnglerProfile.swift */,
+				EE8888882C80000100B1A001 /* AuthView.swift */,
+				EEAAAAAA2C80000100B1A001 /* ProfileView.swift */,
 				0F1A4C8F2C80000100B1A001 /* ContentView.swift */,
 				0F1A4C9A2C80000100B1A001 /* Fish.swift */,
 				0F1A4C9B2C80000100B1A001 /* FishedexTheme.swift */,
@@ -79,9 +106,12 @@
 				0F1A4C9C2C80000100B1A001 /* FishArtworkView.swift */,
 				0F1A4C9D2C80000100B1A001 /* DashboardView.swift */,
 				0F1A4CA62C80000100B1A001 /* CatchView.swift */,
+				CC2222222C80000100B1A001 /* CameraManager.swift */,
+				DD2222222C80000100B1A001 /* LocationWeatherManager.swift */,
 				0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */,
 				0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */,
 				0F1A4C912C80000100B1A001 /* Assets.xcassets */,
+				A89AE23B2FD5C556007A0E46 /* fonts */,
 			);
 			path = Fishedex;
 			sourceTree = "<group>";
@@ -100,6 +130,12 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			packageProductDependencies = (
+				EE1A4C9A2C80000100B1A001 /* Supabase */,
+			);
+			fileSystemSynchronizedGroups = (
+				A89AE23B2FD5C556007A0E46 /* fonts */,
 			);
 			name = Fishedex;
 			productName = Fishedex;
@@ -130,6 +166,9 @@
 				Base,
 			);
 			mainGroup = 0F1A4C7B2C80000100B1A001;
+			packageReferences = (
+				EE1A4C992C80000100B1A001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			productRefGroup = 0F1A4C852C80000100B1A001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -167,6 +206,13 @@
 				BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */,
 				BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */,
 				BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */,
+				CC1111112C80000100B1A001 /* CameraManager.swift in Sources */,
+				DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */,
+				EE1111112C80000100B1A001 /* SupabaseClient.swift in Sources */,
+				EE3333332C80000100B1A001 /* SessionManager.swift in Sources */,
+				EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */,
+				EE7777772C80000100B1A001 /* AuthView.swift in Sources */,
+				EE9999992C80000100B1A001 /* ProfileView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -183,8 +229,11 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Fishedex/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Fishedex;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fishedex needs camera access to scan and identify fish.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Fishedex uses your location to show local weather conditions for fishing.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -215,8 +264,11 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Fishedex/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Fishedex;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fishedex needs camera access to scan and identify fish.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Fishedex uses your location to show local weather conditions for fishing.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -376,6 +428,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EE1A4C992C80000100B1A001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EE1A4C9A2C80000100B1A001 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EE1A4C992C80000100B1A001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0F1A4C7C2C80000100B1A001 /* Project object */;
 }

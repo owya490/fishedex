@@ -1,4 +1,28 @@
 import SwiftUI
+import CoreText
+
+enum FishedexFont {
+    private static let _register: Bool = {
+        guard let url = Bundle.main.url(forResource: "Pokemon Classic", withExtension: "ttf") else { return false }
+        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        return true
+    }()
+
+    static func pokemon(_ size: CGFloat) -> Font {
+        _ = _register
+        return .custom("Pokemon-Classic", size: size)
+    }
+
+    static let header:      Font = pokemon(18)
+    static let title:       Font = pokemon(16)
+    static let title2:      Font = pokemon(14)
+    static let title3:      Font = pokemon(13)
+    static let headline:    Font = pokemon(12)
+    static let subheadline: Font = pokemon(10)
+    static let body:        Font = pokemon(11)
+    static let caption:     Font = pokemon(9)
+    static let micro:       Font = pokemon(8)
+}
 
 enum FishedexTheme {
     // Base palette
@@ -29,10 +53,18 @@ enum FishedexTheme {
 }
 
 extension View {
-    func fishedexCard(cornerRadius: CGFloat = 28) -> some View {
+    func fishedexSquare() -> some View {
+        clipShape(Rectangle())
+    }
+
+    func fishedexBorder(lineWidth: CGFloat = 2, color: Color = .black) -> some View {
+        overlay(Rectangle().stroke(color, lineWidth: lineWidth))
+    }
+
+    func fishedexCard() -> some View {
         self
             .background(FishedexTheme.card)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .shadow(color: Color.black.opacity(0.07), radius: 20, x: 0, y: 12)
+            .fishedexSquare()
+            .fishedexBorder()
     }
 }

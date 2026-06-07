@@ -64,13 +64,13 @@ struct MapTabView: View {
 
     private var localWatersLabel: some View {
         Text("LOCAL WATERS")
-            .font(.caption.weight(.bold))
+            .font(FishedexFont.caption)
             .foregroundStyle(FishedexTheme.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
             .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+            .fishedexSquare()
+            .fishedexBorder(lineWidth: 1)
             .padding(14)
     }
 }
@@ -85,19 +85,19 @@ private struct CollectionProgressCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("COLLECTION PROGRESS")
-                .font(.system(size: 11, weight: .bold))
+                .font(FishedexFont.caption)
                 .foregroundStyle(FishedexTheme.muted)
                 .kerning(0.8)
 
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text(String(format: "%.1f%%", progress * 100))
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .font(FishedexFont.pokemon(28))
                     .foregroundStyle(FishedexTheme.ink)
 
                 Spacer()
 
                 Text("\(caughtCount) / \(total) FISH")
-                    .font(.subheadline.weight(.bold))
+                    .font(FishedexFont.subheadline)
                     .foregroundStyle(FishedexTheme.ocean)
             }
 
@@ -120,7 +120,7 @@ private struct CollectionProgressBlocks: View {
     var body: some View {
         HStack(spacing: 4) {
             ForEach(0..<total, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                Rectangle()
                     .fill(i < filled ? FishedexTheme.progressGreen : Color(red: 0.86, green: 0.86, blue: 0.87))
                     .frame(height: 14)
                     .frame(maxWidth: .infinity)
@@ -136,22 +136,27 @@ private struct FishingSpotPin: View {
 
     var body: some View {
         ZStack {
-            Circle()
+            Rectangle()
                 .fill(Color.white)
                 .frame(width: 40, height: 40)
-                .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
+                .fishedexBorder(lineWidth: 2)
 
             Image(systemName: "fish.fill")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(Color(red: 0.18, green: 0.68, blue: 0.38))
         }
         .overlay(
-            Circle()
+            Rectangle()
                 .stroke(isSelected ? FishedexTheme.ocean : Color.clear, lineWidth: 3)
         )
         .scaleEffect(isSelected ? 1.15 : 1.0)
         .animation(.spring(response: 0.25), value: isSelected)
     }
+}
+
+#Preview {
+    MapTabView(fish: Fish.samples)
+        .environmentObject(SessionManager())
 }
 
 // MARK: - Spot callout card
@@ -162,17 +167,17 @@ private struct SpotCallout: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(spot.name)
-                .font(.headline.weight(.bold))
+                .font(FishedexFont.headline)
                 .foregroundStyle(FishedexTheme.ink)
 
             Text("Biome: \(spot.biome)")
-                .font(.subheadline)
+                .font(FishedexFont.subheadline)
                 .foregroundStyle(FishedexTheme.muted)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 4)
+        .fishedexSquare()
+        .fishedexBorder()
     }
 }

@@ -42,6 +42,26 @@ struct FishStat: Identifiable, Hashable {
     var id: String { name }
 }
 
+// MARK: - Supabase mapping
+
+extension Fish {
+    static func from(species row: FishSpeciesRow, caught: Bool, catchWeight: Double? = nil) -> Fish {
+        let rarity = caught ? (row.isRare ? "Rare" : "Captured") : "Uncaptured"
+        let weightText = catchWeight.map { String(format: "%.1f lbs", $0) } ?? "TBC"
+        return species(
+            row.id,
+            row.name,
+            imageName: row.imageName,
+            habitat: row.habitat,
+            rarity: rarity,
+            season: "All year",
+            caught: caught,
+            about: row.about ?? "\(row.name) is part of the Australian Fishédex catalog. Add artwork and catch notes as you unlock this species.",
+            weight: weightText
+        )
+    }
+}
+
 // MARK: - Catalog
 
 extension Fish {
@@ -223,7 +243,9 @@ extension Fish {
         rarity: String,
         season: String,
         caught: Bool,
-        traits: [String]? = nil
+        traits: [String]? = nil,
+        about: String? = nil,
+        weight: String = "TBC"
     ) -> Fish {
         Fish(
             id: id,
@@ -235,13 +257,13 @@ extension Fish {
             season: season,
             depth: habitat.contains("Offshore") || habitat.contains("reef") ? "Deep" : "Shallow",
             height: "TBC",
-            weight: "TBC",
+            weight: weight,
             avgWeight: avgWeightEstimate(for: habitat),
             prefBait: baitSuggestion(for: habitat),
             location: habitat,
             rarityStars: rarityStarCount(for: habitat),
             waterType: habitat.contains("River") || habitat.contains("stream") || habitat.contains("Lake") ? "Freshwater" : "Saltwater",
-            about: "\(name) is part of the Australian Fishédex catalog. Add artwork and catch notes as you unlock this species.",
+            about: about ?? "\(name) is part of the Australian Fishédex catalog. Add artwork and catch notes as you unlock this species.",
             caught: caught,
             traits: traits ?? [habitat, rarity, season],
             moves: ["Cast", "Hook", "Land"],

@@ -35,7 +35,8 @@ struct TraitPill: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
             .background(tint.opacity(0.22))
-            .clipShape(Capsule())
+            .fishedexSquare()
+            .fishedexBorder(lineWidth: 1)
     }
 }
 

@@ -39,6 +39,12 @@ struct CustomTabBar: View {
     }
 }
 
+#Preview {
+    CustomTabBar(selectedTab: .constant(.map))
+        .padding()
+        .background(Color(red: 0.92, green: 0.92, blue: 0.93))
+}
+
 private struct TabBarButton: View {
     let title: String
     let icon: String
@@ -56,7 +62,7 @@ private struct TabBarButton: View {
                         .foregroundStyle(isActive ? .white : FishedexTheme.muted)
 
                     if hasBadge {
-                        Circle()
+                        Rectangle()
                             .fill(Color.red)
                             .frame(width: 7, height: 7)
                             .offset(x: 4, y: -3)
@@ -64,17 +70,14 @@ private struct TabBarButton: View {
                 }
 
                 Text(title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(FishedexFont.subheadline)
                     .foregroundStyle(isActive ? .white : FishedexTheme.muted)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 64)
             .background(isActive ? activeColor : Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .shadow(
-                color: isActive ? activeColor.opacity(0.30) : Color.black.opacity(0.05),
-                radius: 6, x: 0, y: 2
-            )
+            .fishedexSquare()
+            .fishedexBorder()
         }
         .buttonStyle(.plain)
     }

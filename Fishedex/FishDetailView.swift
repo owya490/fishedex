@@ -23,7 +23,7 @@ struct FishDetailView: View {
 
     private var hero: some View {
         ZStack(alignment: .top) {
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
+            Rectangle()
                 .fill(
                     LinearGradient(
                         colors: [
@@ -38,8 +38,8 @@ struct FishDetailView: View {
                 .frame(height: 430)
                 .ignoresSafeArea(edges: .top)
 
-            Circle()
-                .stroke(Color.white.opacity(0.28), lineWidth: 42)
+            Rectangle()
+                .stroke(Color.white.opacity(0.28), lineWidth: 3)
                 .frame(width: 285, height: 285)
                 .offset(y: 86)
 
@@ -50,13 +50,13 @@ struct FishDetailView: View {
                         .foregroundStyle(.white.opacity(0.86))
 
                     Text(fish.name)
-                        .font(.title2.bold())
+                        .font(FishedexFont.title)
                         .foregroundStyle(.white)
 
                     Spacer()
 
                     Text(fish.number)
-                        .font(.title3.weight(.bold))
+                        .font(FishedexFont.title3)
                         .foregroundStyle(.white.opacity(0.82))
                 }
                 .padding(.horizontal, 24)
@@ -90,8 +90,8 @@ struct FishDetailView: View {
         .padding(22)
         .frame(maxWidth: .infinity)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: -4)
+        .fishedexSquare()
+        .fishedexBorder()
         .padding(.horizontal, 10)
     }
 
@@ -102,22 +102,25 @@ struct FishDetailView: View {
                     selectedTab = tab
                 } label: {
                     Text(tab.rawValue)
-                        .font(.headline.weight(.semibold))
+                        .font(FishedexFont.headline)
                         .foregroundStyle(selectedTab == tab ? FishedexTheme.ink : FishedexTheme.muted)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(selectedTab == tab ? accent.opacity(0.88) : Color.clear)
+                        .fishedexSquare()
+                        .fishedexBorder(lineWidth: 1)
                 }
             }
         }
         .background(FishedexTheme.cream.opacity(0.75))
-        .clipShape(Capsule())
+        .fishedexSquare()
+        .fishedexBorder()
     }
 
     private var aboutContent: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("\"\(fish.about)\"")
-                .font(.body.italic())
+                .font(FishedexFont.body)
                 .foregroundStyle(FishedexTheme.muted)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -131,7 +134,7 @@ struct FishDetailView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("Strong traits")
-                    .font(.headline.weight(.bold))
+                    .font(FishedexFont.headline)
                     .foregroundStyle(FishedexTheme.ink)
 
                 FlowLayout(spacing: 8) {
@@ -147,31 +150,32 @@ struct FishDetailView: View {
     private var statusContent: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Catch Profile")
-                .font(.title3.bold())
+                .font(FishedexFont.title3)
                 .foregroundStyle(FishedexTheme.ink)
 
             ForEach(fish.stats) { stat in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text(stat.name)
-                            .font(.subheadline.weight(.semibold))
+                            .font(FishedexFont.subheadline)
                             .foregroundStyle(FishedexTheme.ink)
 
                         Spacer()
 
                         Text("\(stat.value)")
-                            .font(.subheadline.weight(.bold))
+                            .font(FishedexFont.subheadline)
                             .foregroundStyle(FishedexTheme.muted)
                     }
 
                     GeometryReader { proxy in
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        Rectangle()
                             .fill(FishedexTheme.softLine)
                             .overlay(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                Rectangle()
                                     .fill(accent)
                                     .frame(width: proxy.size.width * CGFloat(stat.value) / 100)
                             }
+                            .fishedexBorder(lineWidth: 1)
                     }
                     .frame(height: 10)
                 }
@@ -182,7 +186,7 @@ struct FishDetailView: View {
     private var movesContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Signature Moves")
-                .font(.title3.bold())
+                .font(FishedexFont.title3)
                 .foregroundStyle(FishedexTheme.ink)
 
             ForEach(fish.moves, id: \.self) { move in
@@ -192,19 +196,27 @@ struct FishDetailView: View {
                         .foregroundStyle(accent)
                         .frame(width: 34, height: 34)
                         .background(accent.opacity(0.14))
-                        .clipShape(Circle())
+                        .fishedexSquare()
+                        .fishedexBorder(lineWidth: 1)
 
                     Text(move)
-                        .font(.headline.weight(.semibold))
+                        .font(FishedexFont.headline)
                         .foregroundStyle(FishedexTheme.ink)
 
                     Spacer()
                 }
                 .padding(14)
                 .background(FishedexTheme.background)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .fishedexSquare()
+                .fishedexBorder(lineWidth: 1)
             }
         }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        FishDetailView(fish: Fish.samples[0])
     }
 }
 
@@ -215,12 +227,12 @@ private struct DetailFactRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .font(.headline.weight(.semibold))
+                .font(FishedexFont.subheadline)
                 .foregroundStyle(FishedexTheme.muted.opacity(0.72))
                 .frame(width: 92, alignment: .leading)
 
             Text(value)
-                .font(.headline.weight(.bold))
+                .font(FishedexFont.subheadline)
                 .foregroundStyle(FishedexTheme.ink)
 
             Spacer()

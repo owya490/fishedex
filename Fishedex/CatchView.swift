@@ -1,159 +1,219 @@
 import SwiftUI
+import AVFoundation
 
-// MARK: - Catch Tab (full-screen camera UI)
+// MARK: - Catch Screen
 
 struct CatchView: View {
     let onBack: () -> Void
-    @State private var fishDetected = true
+
+    @StateObject private var camera          = CameraManager()
+    @StateObject private var locationWeather = LocationWeatherManager()
+    @State private var fishDetected  = false
+    @State private var showCapture   = false
 
     var body: some View {
         ZStack {
-            CameraBackground()
-            CameraOverlay(fishDetected: $fishDetected, onBack: onBack)
-        }
-        .ignoresSafeArea()
-    }
-}
+            // Camera feed fills the full screen including safe areas
+            cameraLayer
+                .ignoresSafeArea()
 
-// MARK: - Camera background (simulated lake scene)
+            // White flash on shutter
+            Color.white
+                .opacity(camera.flashOpacity)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
-private struct CameraBackground: View {
-    var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.58, green: 0.80, blue: 0.90),
-                    Color(red: 0.25, green: 0.52, blue: 0.65),
-                    Color(red: 0.12, green: 0.32, blue: 0.40),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            // Vegetation silhouette
-            HStack(alignment: .bottom, spacing: -18) {
-                ForEach(0..<6, id: \.self) { i in
-                    Image(systemName: "leaf.fill")
-                        .font(.system(size: CGFloat(55 + (i % 3) * 12)))
-                        .foregroundStyle(
-                            Color(red: 0.28, green: 0.55, blue: 0.24)
-                                .opacity(0.75 - Double(i) * 0.06)
-                        )
-                        .rotationEffect(.degrees(Double(i - 2) * 8))
+            // HUD — respects safe areas so parent layout stays intact
+            CameraHUD(
+                camera: camera,
+                locationWeather: locationWeather,
+                fishDetected: $fishDetected,
+                showCapture: $showCapture,
+                onBack: onBack,
+                onCapture: {
+                    camera.capturePhoto()
+                    withAnimation(.spring(response: 0.4)) { showCapture = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        withAnimation { fishDetected = true }
+                    }
                 }
-            }
-            .padding(.trailing, -30)
-            .padding(.bottom, 80)
+            )
+        }
+        .onAppear {
+            camera.requestAndSetup()
+            locationWeather.start()
+        }
+        .onDisappear {
+            camera.stopSession()
+            locationWeather.stop()
+        }
+    }
+
+    @ViewBuilder
+    private var cameraLayer: some View {
+        if camera.permission == .denied {
+            PermissionDeniedBackground()
+        } else {
+            CameraPreviewLayer(session: camera.session)
         }
     }
 }
 
-// MARK: - Camera overlay elements
+// MARK: - Permission denied fallback
 
-private struct CameraOverlay: View {
+private struct PermissionDeniedBackground: View {
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 12) {
+                Image(systemName: "camera.slash.fill")
+                    .font(.system(size: 52))
+                    .foregroundStyle(.white.opacity(0.6))
+                Text("CAMERA ACCESS REQUIRED")
+                    .font(FishedexFont.headline)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .kerning(1)
+                Text("Enable in Settings → Fishedex")
+                    .font(FishedexFont.body)
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+        }
+    }
+}
+
+// MARK: - HUD overlay
+
+private struct CameraHUD: View {
+    @ObservedObject var camera: CameraManager
+    @ObservedObject var locationWeather: LocationWeatherManager
     @Binding var fishDetected: Bool
+    @Binding var showCapture: Bool
     let onBack: () -> Void
+    let onCapture: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             topBar
-                .padding(.horizontal, 20)
-                .padding(.top, 64)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
             Spacer()
 
-            ScanningReticle()
-                .frame(width: 220, height: 178)
+            ScanningReticle(active: camera.isCapturing || showCapture)
+                .frame(width: 230, height: 185)
 
             Spacer()
 
             bottomControls
-                .padding(.horizontal, 20)
-                .padding(.bottom, 52)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
         }
     }
+
+    // MARK: Top bar
 
     private var topBar: some View {
-        HStack {
-            BackButton(action: onBack)
+        HStack(alignment: .center, spacing: 10) {
+            PixelButton(systemIcon: "chevron.left", action: onBack)
+
             Spacer()
-            ContextChip()
+
+            ContextChip(manager: locationWeather)
+
             Spacer()
-            SettingsButton()
+
+            // Captured photo thumbnail — otherwise invisible spacer to keep chip centred
+            if let img = camera.capturedImage {
+                CapturedThumb(image: img)
+            } else {
+                Color.clear.frame(width: 44, height: 44)
+            }
         }
     }
 
+    // MARK: Bottom controls
+
     private var bottomControls: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 16) {
             if fishDetected {
                 FishDetectedBanner()
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            CaptureButton {
-                withAnimation(.spring(response: 0.35)) {
-                    fishDetected.toggle()
-                }
+            VStack(spacing: 8) {
+                PixelFishingRodButton(isCapturing: camera.isCapturing, action: onCapture)
+                Text("CATCH")
+                    .font(FishedexFont.subheadline)
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
             }
         }
     }
 }
 
-// MARK: - Context chip (time + biome)
+// MARK: - Generic pixel icon button
 
-private struct ContextChip: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label("TIME: MIDDAY", systemImage: "sun.max.fill")
-            Label("FRESHWATER", systemImage: "water.waves")
-        }
-        .font(.system(size: 12, weight: .bold))
-        .foregroundStyle(.white)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.black.opacity(0.60))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-}
-
-// MARK: - Settings button
-
-private struct SettingsButton: View {
-    var body: some View {
-        Button {} label: {
-            Image(systemName: "gearshape.fill")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(.black.opacity(0.55))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Back button
-
-private struct BackButton: View {
+private struct PixelButton: View {
+    let systemIcon: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "chevron.left")
-                .font(.system(size: 18, weight: .semibold))
+            Image(systemName: systemIcon)
+                .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
-                .background(.black.opacity(0.55))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(.black.opacity(0.65))
+                .fishedexSquare()
+                .fishedexBorder()
         }
         .buttonStyle(.plain)
     }
 }
 
-// MARK: - Scanning reticle (corner-bracket style)
+// MARK: - Captured photo thumbnail
+
+private struct CapturedThumb: View {
+    let image: UIImage
+
+    var body: some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+            .frame(width: 44, height: 44)
+            .fishedexSquare()
+            .fishedexBorder()
+    }
+}
+
+// MARK: - Context chip (real time + weather)
+
+private struct ContextChip: View {
+    @ObservedObject var manager: LocationWeatherManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label(manager.timeLabel,    systemImage: manager.timeIcon)
+            Label(manager.weatherLabel, systemImage: manager.weatherIcon)
+        }
+        .font(.system(size: 11, weight: .bold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 9)
+        .background(.black.opacity(0.65))
+        .fishedexSquare()
+        .fishedexBorder()
+    }
+}
+
+// MARK: - Scanning reticle
 
 private struct ScanningReticle: View {
-    private let cornerLength: CGFloat = 30
-    private let lineWidth: CGFloat  = 3
+    let active: Bool
+    private let cornerLength: CGFloat = 28
+    private let lineWidth: CGFloat    = 3
+
+    @State private var scanY: CGFloat = 0
+    @State private var pulse          = false
 
     var body: some View {
         ZStack {
@@ -162,38 +222,31 @@ private struct ScanningReticle: View {
                 let h = geo.size.height
 
                 Path { p in
-                    // Top-left
-                    p.move(to: .init(x: 0,           y: cornerLength))
-                    p.addLine(to: .init(x: 0,         y: 0))
-                    p.addLine(to: .init(x: cornerLength, y: 0))
-                    // Top-right
-                    p.move(to: .init(x: w - cornerLength, y: 0))
-                    p.addLine(to: .init(x: w,         y: 0))
-                    p.addLine(to: .init(x: w,         y: cornerLength))
-                    // Bottom-left
-                    p.move(to: .init(x: 0,           y: h - cornerLength))
-                    p.addLine(to: .init(x: 0,         y: h))
-                    p.addLine(to: .init(x: cornerLength, y: h))
-                    // Bottom-right
-                    p.move(to: .init(x: w - cornerLength, y: h))
-                    p.addLine(to: .init(x: w,         y: h))
-                    p.addLine(to: .init(x: w,         y: h - cornerLength))
+                    p.move(to: .init(x: 0, y: cornerLength)); p.addLine(to: .init(x: 0, y: 0)); p.addLine(to: .init(x: cornerLength, y: 0))
+                    p.move(to: .init(x: w - cornerLength, y: 0)); p.addLine(to: .init(x: w, y: 0)); p.addLine(to: .init(x: w, y: cornerLength))
+                    p.move(to: .init(x: 0, y: h - cornerLength)); p.addLine(to: .init(x: 0, y: h)); p.addLine(to: .init(x: cornerLength, y: h))
+                    p.move(to: .init(x: w - cornerLength, y: h)); p.addLine(to: .init(x: w, y: h)); p.addLine(to: .init(x: w, y: h - cornerLength))
                 }
-                .stroke(Color.red, style: StrokeStyle(lineWidth: lineWidth, lineCap: .square))
+                .stroke(active ? Color.green : Color.red,
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .square))
 
-                // Horizontal centre line
-                Path { p in
-                    p.move(to:    .init(x: 0,   y: h / 2))
-                    p.addLine(to: .init(x: w,   y: h / 2))
-                }
-                .stroke(Color.white.opacity(0.35),
-                        style: StrokeStyle(lineWidth: 1, dash: [4, 6]))
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [.clear, (active ? Color.green : Color.red).opacity(0.6), .clear],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
+                    .frame(height: 2)
+                    .offset(y: scanY * h)
+                    .animation(.linear(duration: 1.6).repeatForever(autoreverses: true), value: scanY)
             }
 
             Image(systemName: "fish.hook")
-                .font(.system(size: 46, weight: .light))
-                .foregroundStyle(.white.opacity(0.90))
+                .font(.system(size: 40, weight: .light))
+                .foregroundStyle(.white.opacity(0.85))
+                .scaleEffect(pulse ? 1.08 : 1.0)
+                .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: pulse)
         }
+        .onAppear { scanY = 1; pulse = true }
     }
 }
 
@@ -203,50 +256,72 @@ private struct FishDetectedBanner: View {
     var body: some View {
         VStack(alignment: .center, spacing: 8) {
             Text("! FISH DETECTED !")
-                .font(.system(size: 15, weight: .bold))
+                .font(FishedexFont.title2)
                 .foregroundStyle(FishedexTheme.headerRed)
+                .kerning(1)
                 .frame(maxWidth: .infinity, alignment: .center)
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
-
-                    Capsule()
+                    Rectangle().fill(Color(red: 0.86, green: 0.86, blue: 0.87))
+                    Rectangle()
                         .fill(FishedexTheme.progressGreen)
                         .frame(width: geo.size.width * 0.42)
                 }
             }
             .frame(height: 10)
+
+            Text("SCANNING DATABASE...")
+                .font(FishedexFont.subheadline)
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.8)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 13)
         .background(Color.white.opacity(0.95))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .fishedexSquare()
+        .fishedexBorder()
     }
 }
 
-// MARK: - Capture button
+// MARK: - Catch button
 
-private struct CaptureButton: View {
+private struct PixelFishingRodButton: View {
+    let isCapturing: Bool
     let action: () -> Void
+
+    private let size: CGFloat = 96
 
     var body: some View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(Color(red: 0.20, green: 0.20, blue: 0.20).opacity(0.72))
-                    .frame(width: 76, height: 76)
+                    .fill(isCapturing
+                          ? Color(red: 0.86, green: 0.86, blue: 0.87)
+                          : .white)
+                    .frame(width: size, height: size)
+
+                Image("PixelFishingRod")
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFit()
+                    .frame(width: size * 0.62, height: size * 0.62)
 
                 Circle()
-                    .fill(FishedexTheme.coral)
-                    .frame(width: 62, height: 62)
-
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .stroke(Color.black, lineWidth: 4)
+                    .frame(width: size, height: size)
             }
+            .frame(width: size, height: size)
         }
         .buttonStyle(.plain)
+        .disabled(isCapturing)
+        .scaleEffect(isCapturing ? 0.90 : 1.0)
+        .animation(.easeInOut(duration: 0.10), value: isCapturing)
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    CatchView(onBack: {})
 }

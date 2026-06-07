@@ -2,17 +2,25 @@ import SwiftUI
 
 /// Shared red branded header used on MAP and DEX tabs.
 struct AppHeaderView: View {
+    @EnvironmentObject private var session: SessionManager
+
     var body: some View {
         HStack(spacing: 0) {
-            Text("FISHEDEX")
-                .font(.system(size: 22, weight: .heavy, design: .default))
+            Text("FISHÉDEX")
+                .font(FishedexFont.header)
                 .italic()
                 .foregroundStyle(.white)
                 .kerning(0.5)
 
             Spacer()
 
-            LogoBadge()
+            Button {
+                session.showProfile = true
+            } label: {
+                ProfileAvatarView(urlString: session.profile?.avatarUrl, size: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open angler profile")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -20,13 +28,7 @@ struct AppHeaderView: View {
     }
 }
 
-private struct LogoBadge: View {
-    var body: some View {
-        Image(systemName: "fish.fill")
-            .font(.system(size: 20, weight: .semibold))
-            .foregroundStyle(FishedexTheme.headerRed)
-            .frame(width: 44, height: 44)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
+#Preview {
+    AppHeaderView()
+        .environmentObject(SessionManager())
 }
