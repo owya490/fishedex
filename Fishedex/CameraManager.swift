@@ -20,6 +20,7 @@ final class CameraManager: NSObject, ObservableObject {
     let session = AVCaptureSession()
     private let photoOutput = AVCapturePhotoOutput()
     private let sessionQueue = DispatchQueue(label: "camera.session", qos: .userInitiated)
+    private var isConfigured = false
 
     // MARK: Setup
 
@@ -27,21 +28,26 @@ final class CameraManager: NSObject, ObservableObject {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             DispatchQueue.main.async { self.permission = .granted }
-            setupSession()
+            configureSessionIfNeeded()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async {
                     self.permission = granted ? .granted : .denied
                 }
-                if granted { self.setupSession() }
+                if granted { self.configureSessionIfNeeded() }
             }
         default:
             DispatchQueue.main.async { self.permission = .denied }
         }
     }
 
-    private func setupSession() {
+    private func configureSessionIfNeeded() {
         sessionQueue.async {
+            if self.isConfigured {
+                self.startRunningIfNeeded()
+                return
+            }
+
             self.session.beginConfiguration()
             self.session.sessionPreset = .photo
 
@@ -61,14 +67,20 @@ final class CameraManager: NSObject, ObservableObject {
             }
 
             self.session.commitConfiguration()
-            self.session.startRunning()
+            self.isConfigured = true
+            self.startRunningIfNeeded()
         }
     }
 
     func startSession() {
         sessionQueue.async {
-            if !self.session.isRunning { self.session.startRunning() }
+            self.startRunningIfNeeded()
         }
+    }
+
+    private func startRunningIfNeeded() {
+        guard isConfigured, !session.isRunning else { return }
+        session.startRunning()
     }
 
     func stopSession() {

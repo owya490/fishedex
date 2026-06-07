@@ -3,7 +3,8 @@ import Foundation
 enum FishDetailTab: String, CaseIterable, Identifiable {
     case about = "About"
     case status = "Status"
-    case moves = "Moves"
+    case gallery = "Gallery"
+    case myFish = "My Fish"
 
     var id: String { rawValue }
 }
@@ -47,7 +48,7 @@ struct FishStat: Identifiable, Hashable {
 extension Fish {
     static func from(species row: FishSpeciesRow, caught: Bool, catchWeight: Double? = nil) -> Fish {
         let rarity = caught ? (row.isRare ? "Rare" : "Captured") : "Uncaptured"
-        let weightText = catchWeight.map { String(format: "%.1f lbs", $0) } ?? "TBC"
+        let weightText = catchWeight.map { String(format: "%.1f kg", $0) } ?? "TBC"
         return species(
             row.id,
             row.name,

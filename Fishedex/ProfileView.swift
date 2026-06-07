@@ -137,7 +137,7 @@ struct ProfileView: View {
                     Text("TOTAL WEIGHT")
                         .font(FishedexFont.micro)
                         .foregroundStyle(FishedexTheme.muted)
-                    Text(formattedWeight(stats.totalWeightLbs))
+                    Text(formattedWeight(stats.totalWeightKg))
                         .font(FishedexFont.headline)
                         .foregroundStyle(FishedexTheme.ink)
                 }
@@ -225,9 +225,9 @@ struct ProfileView: View {
         .buttonStyle(.plain)
     }
 
-    private func formattedWeight(_ lbs: Double) -> String {
-        if lbs <= 0 { return "0 LBS" }
-        return "\(Int(lbs.rounded()).formatted()) LBS"
+    private func formattedWeight(_ kg: Double) -> String {
+        if kg <= 0 { return "0 KG" }
+        return String(format: "%.1f KG", kg)
     }
 
     private func handlePhotoSelection(_ item: PhotosPickerItem) async {

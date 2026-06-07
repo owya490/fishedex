@@ -9,6 +9,7 @@ private enum UnauthenticatedScreen {
 struct ContentView: View {
     @EnvironmentObject private var session: SessionManager
     @State private var selectedTab: AppTab = .map
+    @State private var hidesBottomTabBar = false
     @State private var unauthenticatedScreen: UnauthenticatedScreen = .landing
 
     var body: some View {
@@ -61,21 +62,32 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: session.showProfile)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if selectedTab != .catch_ && !session.showProfile {
+            if selectedTab != .catch_ && !session.showProfile && !hidesBottomTabBar {
                 CustomTabBar(selectedTab: $selectedTab)
             }
         }
+    }
+
+    private func openCamera() {
+        selectedTab = .catch_
     }
 
     @ViewBuilder
     private var tabContent: some View {
         switch selectedTab {
         case .map:
-            MapTabView(fish: session.fish)
+            MapTabView(fish: session.fish, onLogoTap: openCamera)
         case .catch_:
-            CatchView(onBack: { selectedTab = .map })
+            CatchView(
+                onBack: { selectedTab = .map },
+                onCatchLogged: { selectedTab = .map }
+            )
         case .dex:
-            DexView(fish: session.fish)
+            DexView(
+                fish: session.fish,
+                hidesBottomTabBar: $hidesBottomTabBar,
+                onLogoTap: openCamera
+            )
         }
     }
 }

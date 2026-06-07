@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct FishDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var session: SessionManager
+
     let fish: Fish
     @State private var selectedTab: FishDetailTab = .about
 
@@ -8,91 +11,56 @@ struct FishDetailView: View {
         FishedexTheme.accent(for: fish)
     }
 
+    private var speciesCatches: [UserCatchRow] {
+        session.catches
+            .filter { $0.speciesId == fish.id }
+            .sorted { $0.caughtAt > $1.caughtAt }
+    }
+
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                hero
-                detailCard
-                    .offset(y: -26)
+        VStack(spacing: 0) {
+            AppHeaderView(onBack: { dismiss() }, showsProfileButton: false)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    heroCard
+                    tabPicker
+                    tabContent
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 20)
             }
         }
-        .background(FishedexTheme.background.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
-    private var hero: some View {
-        ZStack(alignment: .top) {
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            accent.opacity(0.98),
-                            accent.opacity(0.78),
-                            FishedexTheme.cream
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(height: 430)
-                .ignoresSafeArea(edges: .top)
+    private var heroCard: some View {
+        VStack(spacing: 0) {
+            FishArtworkView(fish: fish, height: 140, showsShadow: true)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(accent.opacity(0.08))
 
-            Rectangle()
-                .stroke(Color.white.opacity(0.28), lineWidth: 3)
-                .frame(width: 285, height: 285)
-                .offset(y: 86)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(fish.name.uppercased())
+                    .font(FishedexFont.title2)
+                    .foregroundStyle(FishedexTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 18) {
-                HStack {
-                    Image(systemName: "circle.hexagongrid.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.white.opacity(0.86))
+                Text(fish.number)
+                    .font(FishedexFont.subheadline)
+                    .foregroundStyle(FishedexTheme.tabBlue)
 
-                    Text(fish.name)
-                        .font(FishedexFont.title)
-                        .foregroundStyle(.white)
-
-                    Spacer()
-
-                    Text(fish.number)
-                        .font(FishedexFont.title3)
-                        .foregroundStyle(.white.opacity(0.82))
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-
-                FishArtworkView(fish: fish, height: 245)
-                    .padding(.top, 6)
-
-                TraitPill(label: fish.habitat.lowercased(), tint: .white)
-                    .padding(.top, 2)
-            }
-        }
-    }
-
-    private var detailCard: some View {
-        VStack(spacing: 22) {
-            tabPicker
-
-            Group {
-                switch selectedTab {
-                case .about:
-                    aboutContent
-                case .status:
-                    statusContent
-                case .moves:
-                    movesContent
-                }
+                TraitPill(label: fish.habitat.uppercased(), tint: accent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
         }
-        .padding(22)
-        .frame(maxWidth: .infinity)
         .background(Color.white)
         .fishedexSquare()
         .fishedexBorder()
-        .padding(.horizontal, 10)
     }
 
     private var tabPicker: some View {
@@ -101,30 +69,54 @@ struct FishDetailView: View {
                 Button {
                     selectedTab = tab
                 } label: {
-                    Text(tab.rawValue)
-                        .font(FishedexFont.headline)
-                        .foregroundStyle(selectedTab == tab ? FishedexTheme.ink : FishedexTheme.muted)
+                    Text(tab.rawValue.uppercased())
+                        .font(FishedexFont.micro)
+                        .foregroundStyle(selectedTab == tab ? .white : FishedexTheme.muted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(selectedTab == tab ? accent.opacity(0.88) : Color.clear)
+                        .frame(height: 40)
+                        .background(selectedTab == tab ? FishedexTheme.tabBlue : Color.clear)
                         .fishedexSquare()
                         .fishedexBorder(lineWidth: 1)
                 }
+                .buttonStyle(.plain)
             }
         }
-        .background(FishedexTheme.cream.opacity(0.75))
+        .background(Color(red: 0.86, green: 0.86, blue: 0.87))
+        .fishedexSquare()
+        .fishedexBorder()
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        Group {
+            switch selectedTab {
+            case .about:
+                aboutContent
+            case .status:
+                statusContent
+            case .gallery:
+                galleryContent
+            case .myFish:
+                myFishContent
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color.white)
         .fishedexSquare()
         .fishedexBorder()
     }
 
     private var aboutContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("\"\(fish.about)\"")
+        VStack(alignment: .leading, spacing: 16) {
+            Text(fish.about)
                 .font(FishedexFont.body)
                 .foregroundStyle(FishedexTheme.muted)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 DetailFactRow(label: "Height", value: fish.height)
                 DetailFactRow(label: "Weight", value: fish.weight)
                 DetailFactRow(label: "Water", value: fish.waterType)
@@ -132,31 +124,34 @@ struct FishDetailView: View {
                 DetailFactRow(label: "Depth", value: fish.depth)
             }
 
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Strong traits")
-                    .font(FishedexFont.headline)
-                    .foregroundStyle(FishedexTheme.ink)
+            if !fish.traits.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("TRAITS")
+                        .font(FishedexFont.caption)
+                        .foregroundStyle(FishedexTheme.muted)
+                        .kerning(0.6)
 
-                FlowLayout(spacing: 8) {
-                    ForEach(fish.traits, id: \.self) { trait in
-                        TraitPill(label: trait, tint: accent)
+                    HStack(spacing: 8) {
+                        ForEach(fish.traits, id: \.self) { trait in
+                            TraitPill(label: trait, tint: accent)
+                        }
                     }
                 }
             }
-            .padding(.top, 4)
         }
     }
 
     private var statusContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Catch Profile")
-                .font(FishedexFont.title3)
-                .foregroundStyle(FishedexTheme.ink)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("CATCH PROFILE")
+                .font(FishedexFont.caption)
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.6)
 
             ForEach(fish.stats) { stat in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(stat.name)
+                        Text(stat.name.uppercased())
                             .font(FishedexFont.subheadline)
                             .foregroundStyle(FishedexTheme.ink)
 
@@ -169,46 +164,64 @@ struct FishDetailView: View {
 
                     GeometryReader { proxy in
                         Rectangle()
-                            .fill(FishedexTheme.softLine)
+                            .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
                             .overlay(alignment: .leading) {
                                 Rectangle()
-                                    .fill(accent)
+                                    .fill(FishedexTheme.tabBlue)
                                     .frame(width: proxy.size.width * CGFloat(stat.value) / 100)
                             }
                             .fishedexBorder(lineWidth: 1)
                     }
-                    .frame(height: 10)
+                    .frame(height: 12)
                 }
             }
         }
     }
 
-    private var movesContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Signature Moves")
-                .font(FishedexFont.title3)
-                .foregroundStyle(FishedexTheme.ink)
+    private var galleryContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("GALLERY")
+                .font(FishedexFont.caption)
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.6)
 
-            ForEach(fish.moves, id: \.self) { move in
-                HStack(spacing: 12) {
-                    Image(systemName: "sparkle")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(accent)
-                        .frame(width: 34, height: 34)
-                        .background(accent.opacity(0.14))
-                        .fishedexSquare()
-                        .fishedexBorder(lineWidth: 1)
-
-                    Text(move)
-                        .font(FishedexFont.headline)
-                        .foregroundStyle(FishedexTheme.ink)
-
-                    Spacer()
+            if speciesCatches.isEmpty {
+                FishEmptyStateView(
+                    message: "You have not caught any fish or uploaded any photos of this fish."
+                )
+            } else {
+                LazyVGrid(
+                    columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                    spacing: 8
+                ) {
+                    ForEach(speciesCatches) { catchRow in
+                        FishGalleryTile(
+                            label: catchRow.caughtAt.formatted(date: .abbreviated, time: .omitted).uppercased(),
+                            imageName: fish.imageName
+                        )
+                    }
                 }
-                .padding(14)
-                .background(FishedexTheme.background)
-                .fishedexSquare()
-                .fishedexBorder(lineWidth: 1)
+            }
+        }
+    }
+
+    private var myFishContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("MY FISH")
+                .font(FishedexFont.caption)
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.6)
+
+            if speciesCatches.isEmpty {
+                FishEmptyStateView(
+                    message: "You haven't caught this species yet."
+                )
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(speciesCatches) { catchRow in
+                        YourFishCatchRow(catchRow: catchRow, fish: fish)
+                    }
+                }
             }
         }
     }
@@ -217,6 +230,25 @@ struct FishDetailView: View {
 #Preview {
     NavigationStack {
         FishDetailView(fish: Fish.samples[0])
+            .environmentObject(SessionManager())
+    }
+}
+
+private struct FishEmptyStateView: View {
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            PixelGrayFishIconView()
+
+            Text(message)
+                .font(FishedexFont.subheadline)
+                .foregroundStyle(FishedexTheme.ink)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
     }
 }
 
@@ -226,10 +258,11 @@ private struct DetailFactRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
-                .font(FishedexFont.subheadline)
-                .foregroundStyle(FishedexTheme.muted.opacity(0.72))
-                .frame(width: 92, alignment: .leading)
+            Text(label.uppercased())
+                .font(FishedexFont.micro)
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.4)
+                .frame(width: 72, alignment: .leading)
 
             Text(value)
                 .font(FishedexFont.subheadline)
@@ -237,16 +270,74 @@ private struct DetailFactRow: View {
 
             Spacer()
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: 1)
     }
 }
 
-private struct FlowLayout<Content: View>: View {
-    let spacing: CGFloat
-    @ViewBuilder let content: Content
+private struct FishGalleryTile: View {
+    let label: String
+    let imageName: String
 
     var body: some View {
-        HStack(spacing: spacing) {
-            content
+        VStack(spacing: 6) {
+            Image(imageName)
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+                .frame(height: 72)
+                .frame(maxWidth: .infinity)
+
+            Text(label)
+                .font(FishedexFont.micro)
+                .foregroundStyle(FishedexTheme.muted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
+        .padding(8)
+        .frame(maxWidth: .infinity)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: 1)
+    }
+}
+
+private struct YourFishCatchRow: View {
+    let catchRow: UserCatchRow
+    let fish: Fish
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(fish.imageName)
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+                .frame(width: 48, height: 48)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(fish.name.uppercased())
+                    .font(FishedexFont.subheadline)
+                    .foregroundStyle(FishedexTheme.ink)
+
+                Text(catchRow.caughtAt.formatted(date: .abbreviated, time: .shortened))
+                    .font(FishedexFont.caption)
+                    .foregroundStyle(FishedexTheme.muted)
+            }
+
+            Spacer()
+
+            if let weight = catchRow.weightKg {
+                Text(String(format: "%.1f kg", weight))
+                    .font(FishedexFont.subheadline)
+                    .foregroundStyle(FishedexTheme.tabBlue)
+            }
+        }
+        .padding(12)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: 1)
     }
 }

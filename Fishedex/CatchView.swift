@@ -1,61 +1,150 @@
 import SwiftUI
 import AVFoundation
 
+private enum CatchPhase {
+    case camera
+    case scanning
+    case success
+}
+
 // MARK: - Catch Screen
 
 struct CatchView: View {
     let onBack: () -> Void
+    var onCatchLogged: () -> Void = {}
 
     @StateObject private var camera          = CameraManager()
     @StateObject private var locationWeather = LocationWeatherManager()
-    @State private var fishDetected  = false
-    @State private var showCapture   = false
+    @State private var phase: CatchPhase     = .camera
+    @State private var showCapture           = false
+    @State private var scanProgress: CGFloat = 0
+    @State private var caughtAt              = Date()
+    @State private var scanTask: Task<Void, Never>?
+
+    private let scanDuration: TimeInterval = 5
 
     var body: some View {
         ZStack {
-            // Camera feed fills the full screen including safe areas
-            cameraLayer
+            captureLayer
                 .ignoresSafeArea()
 
-            // White flash on shutter
             Color.white
                 .opacity(camera.flashOpacity)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            // HUD — respects safe areas so parent layout stays intact
             CameraHUD(
                 camera: camera,
                 locationWeather: locationWeather,
-                fishDetected: $fishDetected,
-                showCapture: $showCapture,
-                onBack: onBack,
-                onCapture: {
-                    camera.capturePhoto()
-                    withAnimation(.spring(response: 0.4)) { showCapture = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                        withAnimation { fishDetected = true }
-                    }
-                }
+                phase: phase,
+                showCapture: showCapture,
+                scanProgress: scanProgress,
+                onBack: handleBack,
+                onCapture: captureFish
             )
+        }
+        .fullScreenCover(isPresented: successBinding) {
+            if let image = camera.capturedImage {
+                CatchSuccessView(
+                    capturedImage: image,
+                    initialLocationName: locationWeather.locationName,
+                    initialCoordinate: locationWeather.userCoordinate,
+                    caughtAt: caughtAt,
+                    onFinished: {
+                        resetCatchFlow()
+                        onCatchLogged()
+                    }
+                )
+            }
         }
         .onAppear {
             camera.requestAndSetup()
             locationWeather.start()
         }
         .onDisappear {
+            scanTask?.cancel()
             camera.stopSession()
             locationWeather.stop()
         }
     }
 
+    private var successBinding: Binding<Bool> {
+        Binding(
+            get: { phase == .success },
+            set: { isPresented in
+                if !isPresented, phase == .success {
+                    resetCatchFlow()
+                }
+            }
+        )
+    }
+
     @ViewBuilder
-    private var cameraLayer: some View {
-        if camera.permission == .denied {
+    private var captureLayer: some View {
+        if phase == .scanning || phase == .success, let image = camera.capturedImage {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+        } else if camera.permission == .denied {
             PermissionDeniedBackground()
         } else {
             CameraPreviewLayer(session: camera.session)
         }
+    }
+
+    private func captureFish() {
+        guard phase == .camera else { return }
+
+        camera.capturePhoto()
+        caughtAt = Date()
+        withAnimation(.spring(response: 0.4)) { showCapture = true }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation { phase = .scanning }
+            startScanning()
+        }
+    }
+
+    private func startScanning() {
+        scanProgress = 0
+        scanTask?.cancel()
+        scanTask = Task {
+            let steps = 50
+            let stepNanos = UInt64(scanDuration / Double(steps) * 1_000_000_000)
+
+            for step in 1...steps {
+                try? await Task.sleep(nanoseconds: stepNanos)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    scanProgress = CGFloat(step) / CGFloat(steps)
+                }
+            }
+
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                camera.stopSession()
+                withAnimation { phase = .success }
+            }
+        }
+    }
+
+    private func handleBack() {
+        guard phase != .scanning else { return }
+        if phase == .success {
+            resetCatchFlow()
+        } else {
+            onBack()
+        }
+    }
+
+    private func resetCatchFlow() {
+        scanTask?.cancel()
+        scanTask = nil
+        scanProgress = 0
+        showCapture = false
+        phase = .camera
+        camera.capturedImage = nil
+        camera.startSession()
     }
 }
 
@@ -86,10 +175,13 @@ private struct PermissionDeniedBackground: View {
 private struct CameraHUD: View {
     @ObservedObject var camera: CameraManager
     @ObservedObject var locationWeather: LocationWeatherManager
-    @Binding var fishDetected: Bool
-    @Binding var showCapture: Bool
+    let phase: CatchPhase
+    let showCapture: Bool
+    let scanProgress: CGFloat
     let onBack: () -> Void
     let onCapture: () -> Void
+
+    private var isScanning: Bool { phase == .scanning }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -110,11 +202,11 @@ private struct CameraHUD: View {
         }
     }
 
-    // MARK: Top bar
-
     private var topBar: some View {
         HStack(alignment: .center, spacing: 10) {
-            FishedexBackButton(action: onBack, style: .overlay, size: 44, iconSize: 17)
+            FishedexBackButton(action: onBack, style: .overlay)
+                .opacity(isScanning ? 0.35 : 1)
+                .disabled(isScanning)
 
             Spacer()
 
@@ -122,29 +214,29 @@ private struct CameraHUD: View {
 
             Spacer()
 
-            // Captured photo thumbnail — otherwise invisible spacer to keep chip centred
             if let img = camera.capturedImage {
                 CapturedThumb(image: img)
             } else {
-                Color.clear.frame(width: 44, height: 44)
+                Color.clear.frame(width: 32, height: 32)
             }
         }
     }
 
-    // MARK: Bottom controls
-
     private var bottomControls: some View {
         VStack(spacing: 16) {
-            if fishDetected {
-                FishDetectedBanner()
+            if isScanning {
+                FishDetectedBanner(progress: scanProgress)
+                    .frame(maxWidth: 288)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            VStack(spacing: 8) {
-                PixelFishingRodButton(isCapturing: camera.isCapturing, action: onCapture)
-                Text("CATCH")
-                    .font(FishedexFont.subheadline)
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
+            if phase == .camera {
+                VStack(spacing: 8) {
+                    PixelFishingRodButton(isCapturing: camera.isCapturing, action: onCapture)
+                    Text("CATCH")
+                        .font(FishedexFont.subheadline)
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
+                }
             }
         }
     }
@@ -159,7 +251,7 @@ private struct CapturedThumb: View {
         Image(uiImage: image)
             .resizable()
             .scaledToFill()
-            .frame(width: 44, height: 44)
+            .frame(width: 32, height: 32)
             .fishedexSquare()
             .fishedexBorder()
     }
@@ -233,25 +325,28 @@ private struct ScanningReticle: View {
 // MARK: - Fish detected banner
 
 private struct FishDetectedBanner: View {
+    let progress: CGFloat
+
     var body: some View {
         VStack(alignment: .center, spacing: 8) {
             Text("! FISH DETECTED !")
                 .font(FishedexFont.title2)
                 .foregroundStyle(FishedexTheme.headerRed)
                 .kerning(1)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .multilineTextAlignment(.center)
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Rectangle().fill(Color(red: 0.86, green: 0.86, blue: 0.87))
                     Rectangle()
                         .fill(FishedexTheme.progressGreen)
-                        .frame(width: geo.size.width * 0.42)
+                        .frame(width: geo.size.width * min(max(progress, 0), 1))
+                        .animation(.linear(duration: 0.08), value: progress)
                 }
             }
             .frame(height: 10)
 
-            Text("SCANNING DATABASE...")
+            Text(progress >= 1 ? "IDENTIFIED!" : "ANALYZING FISH...")
                 .font(FishedexFont.subheadline)
                 .foregroundStyle(FishedexTheme.muted)
                 .kerning(0.8)

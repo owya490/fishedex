@@ -6,14 +6,22 @@ private enum DexMode { case dex, myFish }
 
 struct DexView: View {
     let fish: [Fish]
+    @Binding var hidesBottomTabBar: Bool
+    var onLogoTap: (() -> Void)? = nil
 
     @State private var searchText   = ""
     @State private var dexMode: DexMode = .dex
     @State private var selectedFish: Fish?
     @State private var fishForDetail: Fish?
 
-    init(fish: [Fish]) {
+    init(
+        fish: [Fish],
+        hidesBottomTabBar: Binding<Bool> = .constant(false),
+        onLogoTap: (() -> Void)? = nil
+    ) {
         self.fish = fish
+        self.onLogoTap = onLogoTap
+        _hidesBottomTabBar = hidesBottomTabBar
         _selectedFish = State(initialValue: fish.first)
     }
 
@@ -26,7 +34,7 @@ struct DexView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                AppHeaderView()
+                AppHeaderView(onLogoTap: onLogoTap)
 
                 DexSearchBar(text: $searchText)
 
@@ -48,7 +56,9 @@ struct DexView: View {
                             .frame(maxWidth: .infinity)
                     } else if let selectedFish {
                         DexDetailPanel(fish: selectedFish) {
-                            fishForDetail = selectedFish
+                            if selectedFish.caught {
+                                fishForDetail = selectedFish
+                            }
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -61,6 +71,9 @@ struct DexView: View {
             }
             .onChange(of: dexMode) { _, _ in
                 selectedFish = displayedFish.first
+            }
+            .onChange(of: fishForDetail) { _, fish in
+                hidesBottomTabBar = fish != nil
             }
         }
     }
@@ -159,7 +172,7 @@ private struct DexFishCell: View {
         VStack(spacing: 4) {
             Group {
                 if fish.caught {
-                    FishArtworkView(fish: fish, height: 50, showsShadow: false)
+                    FishArtworkView(fish: fish, height: 68, showsShadow: false)
                         .frame(maxWidth: .infinity)
                 } else {
                     MysteryFishSilhouetteView()
@@ -168,7 +181,7 @@ private struct DexFishCell: View {
             }
             .padding(.top, 4)
 
-            Text(fish.caught ? fish.name.uppercased() : "???")
+            Text(fish.name.uppercased())
                 .font(FishedexFont.micro)
                 .foregroundStyle(isSelected ? .white : FishedexTheme.ink)
                 .lineLimit(2)
@@ -227,20 +240,34 @@ private struct DexDetailPanel: View {
             nameBlock
             factGrid
             descriptionText
-            detailButton
+
+            Rectangle()
+                .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
+                .frame(height: 1)
+                .padding(.top, 4)
+
+            detailSection
         }
+    }
+
+    private var fishNameText: some View {
+        Text(fish.name.uppercased())
+            .font(FishedexFont.title2)
+            .foregroundStyle(FishedexTheme.ink)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var nameBlock: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Button(action: onOpenDetail) {
-                Text(fish.name.uppercased())
-                    .font(FishedexFont.title2)
-                    .foregroundStyle(FishedexTheme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            if fish.caught {
+                Button(action: onOpenDetail) {
+                    fishNameText
+                }
+                .buttonStyle(.plain)
+            } else {
+                fishNameText
             }
-            .buttonStyle(.plain)
 
             Text(fish.number)
                 .font(FishedexFont.subheadline)
@@ -259,19 +286,41 @@ private struct DexDetailPanel: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var detailButton: some View {
-        Button(action: onOpenDetail) {
-            Text("VIEW DETAILS")
-                .font(FishedexFont.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(FishedexTheme.tabBlue)
-                .fishedexSquare()
-                .fishedexBorder()
+    @ViewBuilder
+    private var detailSection: some View {
+        VStack(spacing: 10) {
+            if fish.caught {
+                Button(action: onOpenDetail) {
+                    viewDetailsLabel(foreground: .white, background: FishedexTheme.tabBlue)
+                }
+                .buttonStyle(.plain)
+            } else {
+                viewDetailsLabel(
+                    foreground: FishedexTheme.muted,
+                    background: Color(red: 0.86, green: 0.86, blue: 0.87)
+                )
+
+                Text("Please discover this fish first to view details.")
+                    .font(FishedexFont.caption)
+                    .foregroundStyle(FishedexTheme.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
+            }
         }
-        .buttonStyle(.plain)
         .padding(.top, 4)
+        .padding(.bottom, 2)
+    }
+
+    private func viewDetailsLabel(foreground: Color, background: Color) -> some View {
+        Text("VIEW DETAILS")
+            .font(FishedexFont.headline)
+            .foregroundStyle(foreground)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(background)
+            .fishedexSquare()
+            .fishedexBorder()
     }
 }
 
@@ -330,9 +379,7 @@ private struct DexFactPair: View {
 private struct DexMyFishEmptyState: View {
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "fish")
-                .font(.system(size: 36, weight: .semibold))
-                .foregroundStyle(FishedexTheme.muted.opacity(0.45))
+            PixelGrayFishIconView()
 
             Text("Catch your first fish!")
                 .font(FishedexFont.headline)

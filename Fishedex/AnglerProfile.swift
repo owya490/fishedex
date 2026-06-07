@@ -42,17 +42,47 @@ struct FishSpeciesRow: Codable, Identifiable {
 struct UserCatchRow: Codable, Identifiable {
     let id: UUID
     let userId: UUID
-    let speciesId: Int
-    let weightLbs: Double?
+    let speciesId: Int?
+    let customName: String?
+    let weightKg: Double?
+    let lengthCm: Double?
+    let locationName: String?
+    let latitude: Double?
+    let longitude: Double?
+    let notes: String?
+    let photoUrl: String?
     let caughtAt: Date
+
+    var displayName: String {
+        if let customName, !customName.isEmpty { return customName }
+        return "Unknown fish"
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
         case userId = "user_id"
         case speciesId = "species_id"
-        case weightLbs = "weight_lbs"
+        case customName = "custom_name"
+        case weightKg = "weight_kg"
+        case lengthCm = "length_cm"
+        case locationName = "location_name"
+        case latitude, longitude, notes
+        case photoUrl = "photo_url"
         case caughtAt = "caught_at"
     }
+}
+
+struct LogCatchInput {
+    var speciesId: Int?
+    var fishName: String?
+    var weightKg: Double?
+    var lengthCm: Double?
+    var locationName: String?
+    var latitude: Double?
+    var longitude: Double?
+    var caughtAt: Date
+    var notes: String?
+    var photoData: Data?
 }
 
 struct AchievementRow: Codable, Identifiable {
@@ -86,7 +116,7 @@ struct AnglerStats {
     let caughtCount: Int
     let totalSpecies: Int
     let rareCaughtCount: Int
-    let totalWeightLbs: Double
+    let totalWeightKg: Double
     let unlockedAchievements: Int
     let totalAchievements: Int
 

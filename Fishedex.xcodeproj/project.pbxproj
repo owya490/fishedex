@@ -17,6 +17,7 @@
 		0F1A4CA42C80000100B1A001 /* FishedexListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */; };
 		0F1A4CA52C80000100B1A001 /* FishDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */; };
 		0F1A4CA72C80000100B1A001 /* CatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4CA62C80000100B1A001 /* CatchView.swift */; };
+		AA1111112C80000100B1A001 /* CatchSuccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2222222C80000100B1A001 /* CatchSuccessView.swift */; };
 		BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222C80000100B1A001 /* FishingSpot.swift */; };
 		BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444442C80000100B1A001 /* AppHeaderView.swift */; };
 		BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6666662C80000100B1A001 /* CustomTabBar.swift */; };
@@ -44,6 +45,7 @@
 		0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishedexListView.swift; sourceTree = "<group>"; };
 		0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishDetailView.swift; sourceTree = "<group>"; };
 		0F1A4CA62C80000100B1A001 /* CatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchView.swift; sourceTree = "<group>"; };
+		AA2222222C80000100B1A001 /* CatchSuccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchSuccessView.swift; sourceTree = "<group>"; };
 		A89AE23A2FD5C47E007A0E46 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BB2222222C80000100B1A001 /* FishingSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpot.swift; sourceTree = "<group>"; };
 		BB4444442C80000100B1A001 /* AppHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHeaderView.swift; sourceTree = "<group>"; };
@@ -112,6 +114,7 @@
 				0F1A4C9C2C80000100B1A001 /* FishArtworkView.swift */,
 				0F1A4C9D2C80000100B1A001 /* DashboardView.swift */,
 				0F1A4CA62C80000100B1A001 /* CatchView.swift */,
+				AA2222222C80000100B1A001 /* CatchSuccessView.swift */,
 				CC2222222C80000100B1A001 /* CameraManager.swift */,
 				DD2222222C80000100B1A001 /* LocationWeatherManager.swift */,
 				0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */,
@@ -206,6 +209,7 @@
 				0F1A4C902C80000100B1A001 /* ContentView.swift in Sources */,
 				0F1A4CA32C80000100B1A001 /* DashboardView.swift in Sources */,
 				0F1A4CA72C80000100B1A001 /* CatchView.swift in Sources */,
+				AA1111112C80000100B1A001 /* CatchSuccessView.swift in Sources */,
 				0F1A4CA12C80000100B1A001 /* FishedexTheme.swift in Sources */,
 				0F1A4CA22C80000100B1A001 /* FishArtworkView.swift in Sources */,
 				0F1A4C8E2C80000100B1A001 /* FishedexApp.swift in Sources */,
@@ -245,6 +249,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -280,6 +286,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

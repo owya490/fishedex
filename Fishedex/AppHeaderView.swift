@@ -5,6 +5,7 @@ struct AppHeaderView: View {
     @EnvironmentObject private var session: SessionManager
 
     var onBack: (() -> Void)? = nil
+    var onLogoTap: (() -> Void)? = nil
     var showsProfileButton: Bool = true
     var showsProfileAvatar: Bool = true
 
@@ -14,7 +15,7 @@ struct AppHeaderView: View {
     var body: some View {
         HStack(spacing: 12) {
             leadingSlot
-                .frame(width: leadingSlotSize, height: leadingSlotSize)
+                .frame(width: leadingSlotWidth, height: iconSize)
 
             Spacer()
 
@@ -26,14 +27,14 @@ struct AppHeaderView: View {
             Spacer()
 
             trailingSlot
-                .frame(width: showsProfileAvatar ? slotSize : leadingSlotSize, height: showsProfileAvatar ? slotSize : leadingSlotSize)
+                .frame(width: showsProfileAvatar ? slotSize : leadingSlotWidth, height: showsProfileAvatar ? slotSize : iconSize)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 2)
         .background(FishedexTheme.headerRed)
     }
 
-    private var leadingSlotSize: CGFloat {
+    private var leadingSlotWidth: CGFloat {
         onBack == nil ? iconSize : slotSize
     }
 
@@ -41,16 +42,26 @@ struct AppHeaderView: View {
     private var leadingSlot: some View {
         if let onBack {
             FishedexBackButton(action: onBack, style: .header, size: slotSize)
+        } else if let onLogoTap {
+            Button(action: onLogoTap) {
+                logoImage
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open camera")
         } else {
-            Image("FishedexIcon")
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
-                .frame(width: iconSize * 1.2, height: iconSize * 1.2)
-                .frame(width: iconSize, height: iconSize)
-                .clipped()
-                .accessibilityHidden(true)
+            logoImage
         }
+    }
+
+    private var logoImage: some View {
+        Image("FishedexIcon")
+            .resizable()
+            .interpolation(.none)
+            .scaledToFit()
+            .frame(width: iconSize * 1.2, height: iconSize * 1.2)
+            .frame(width: iconSize, height: iconSize)
+            .clipped()
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder

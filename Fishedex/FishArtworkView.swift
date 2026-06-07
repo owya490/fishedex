@@ -41,12 +41,27 @@ struct TraitPill: View {
 }
 
 struct MysteryFishSilhouetteView: View {
+    var height: CGFloat = 80
+
     var body: some View {
         Image("MysteryFish")
             .resizable()
             .interpolation(.none)
             .scaledToFit()
-            .frame(height: 62)
+            .frame(height: height)
             .accessibilityLabel(Text("Mystery fish silhouette"))
+    }
+}
+
+struct PixelGrayFishIconView: View {
+    var size: CGFloat = 72
+
+    var body: some View {
+        Image("PixelGrayFish")
+            .resizable()
+            .interpolation(.none)
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityLabel(Text("Uncaught fish"))
     }
 }

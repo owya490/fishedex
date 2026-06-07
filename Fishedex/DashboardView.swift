@@ -9,6 +9,7 @@ private let defaultMapSpan = 0.038
 
 struct MapTabView: View {
     let fish: [Fish]
+    var onLogoTap: (() -> Void)? = nil
 
     @StateObject private var location = LocationWeatherManager()
     @State private var selectedSpot: FishingSpot? = nil
@@ -28,7 +29,7 @@ struct MapTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AppHeaderView()
+            AppHeaderView(onLogoTap: onLogoTap)
             CollectionProgressCard(caughtCount: caughtCount, total: fish.count, progress: progress)
             mapSection
         }
@@ -61,7 +62,7 @@ struct MapTabView: View {
     // MARK: Map section
 
     private var mapSection: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .top) {
             Map(position: $cameraPosition) {
                 ForEach(spots) { spot in
                     Annotation("", coordinate: spot.coordinate) {
@@ -108,6 +109,7 @@ struct MapTabView: View {
             .fishedexSquare()
             .fishedexBorder(lineWidth: 1)
             .padding(14)
+            .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
@@ -120,21 +122,23 @@ private struct CollectionProgressCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("COLLECTION PROGRESS")
-                .font(FishedexFont.caption)
-                .foregroundStyle(FishedexTheme.muted)
-                .kerning(0.8)
-
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text(String(format: "%.1f%%", progress * 100))
-                    .font(FishedexFont.pokemon(22))
-                    .foregroundStyle(FishedexTheme.ink)
-
-                Spacer()
-
-                Text("\(caughtCount) / \(total) FISH")
-                    .font(FishedexFont.subheadline)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("COLLECTION PROGRESS")
+                    .font(FishedexFont.caption)
                     .foregroundStyle(FishedexTheme.muted)
+                    .kerning(0.8)
+
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(String(format: "%.1f%%", progress * 100))
+                        .font(FishedexFont.pokemon(22))
+                        .foregroundStyle(FishedexTheme.ink)
+
+                    Spacer()
+
+                    Text("\(caughtCount) / \(total) FISH")
+                        .font(FishedexFont.subheadline)
+                        .foregroundStyle(FishedexTheme.muted)
+                }
             }
 
             CollectionProgressBlocks(progress: progress)

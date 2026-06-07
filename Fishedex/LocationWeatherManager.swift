@@ -15,8 +15,10 @@ final class LocationWeatherManager: NSObject, ObservableObject {
     @Published var weatherIcon  = "location.fill"
 
     @Published var userCoordinate: CLLocationCoordinate2D?
+    @Published var locationName = "Locating..."
 
     private let locationManager = CLLocationManager()
+    private let geocoder = CLGeocoder()
     private var timer: AnyCancellable?
     private var lastFetchLocation: CLLocation?
 
@@ -122,10 +124,33 @@ extension LocationWeatherManager: CLLocationManagerDelegate {
         DispatchQueue.main.async {
             self.userCoordinate = loc.coordinate
         }
+        reverseGeocode(loc)
         // Only re-fetch if moved more than 5 km
         if let prev = lastFetchLocation, prev.distance(from: loc) < 5_000 { return }
         lastFetchLocation = loc
         fetchWeather(lat: loc.coordinate.latitude, lon: loc.coordinate.longitude)
+    }
+
+    private func reverseGeocode(_ location: CLLocation) {
+        geocoder.cancelGeocode()
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
+            guard let self else { return }
+            let label = Self.locationLabel(from: placemarks?.first, coordinate: location.coordinate)
+            DispatchQueue.main.async {
+                self.locationName = label
+            }
+        }
+    }
+
+    private static func locationLabel(from placemark: CLPlacemark?, coordinate: CLLocationCoordinate2D) -> String {
+        if let placemark {
+            if let locality = placemark.locality, let area = placemark.administrativeArea {
+                return "\(locality), \(area)"
+            }
+            if let name = placemark.name { return name }
+            if let locality = placemark.locality { return locality }
+        }
+        return String(format: "%.4f°, %.4f°", coordinate.latitude, coordinate.longitude)
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -136,6 +161,7 @@ extension LocationWeatherManager: CLLocationManagerDelegate {
             DispatchQueue.main.async {
                 self.weatherLabel = "NO LOCATION"
                 self.weatherIcon  = "location.slash.fill"
+                self.locationName = "Location unavailable"
             }
         default:
             break
