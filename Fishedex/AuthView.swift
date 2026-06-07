@@ -3,6 +3,9 @@ import SwiftUI
 struct AuthView: View {
     @EnvironmentObject private var session: SessionManager
 
+    var initialIsSignUp: Bool = false
+    var onBack: (() -> Void)? = nil
+
     @State private var email = ""
     @State private var password = ""
     @State private var displayName = ""
@@ -11,7 +14,7 @@ struct AuthView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            AppHeaderView(onBack: onBack, showsProfileButton: false, showsProfileAvatar: false)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -70,19 +73,12 @@ struct AuthView: View {
             }
         }
         .background(Color.white.ignoresSafeArea())
-    }
-
-    private var header: some View {
-        HStack {
-            Text("FISHÉDEX")
-                .font(FishedexFont.header)
-                .italic()
-                .foregroundStyle(.white)
-            Spacer()
+        .onAppear {
+            isSignUp = initialIsSignUp
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(FishedexTheme.headerRed)
+        .onChange(of: initialIsSignUp) { _, newValue in
+            isSignUp = newValue
+        }
     }
 
     private var canSubmit: Bool {

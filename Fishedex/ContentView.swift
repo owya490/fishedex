@@ -1,8 +1,15 @@
 import SwiftUI
 
+private enum UnauthenticatedScreen {
+    case landing
+    case login
+    case signup
+}
+
 struct ContentView: View {
     @EnvironmentObject private var session: SessionManager
     @State private var selectedTab: AppTab = .map
+    @State private var unauthenticatedScreen: UnauthenticatedScreen = .landing
 
     var body: some View {
         Group {
@@ -11,12 +18,27 @@ struct ContentView: View {
             } else if session.isAuthenticated {
                 authenticatedContent
             } else {
-                AuthView()
+                unauthenticatedContent
             }
         }
         .sheet(isPresented: $session.showProfile) {
             ProfileView()
                 .environmentObject(session)
+        }
+    }
+
+    @ViewBuilder
+    private var unauthenticatedContent: some View {
+        switch unauthenticatedScreen {
+        case .landing:
+            LandingView(
+                onLogin: { unauthenticatedScreen = .login },
+                onSignUp: { unauthenticatedScreen = .signup }
+            )
+        case .login:
+            AuthView(initialIsSignUp: false, onBack: { unauthenticatedScreen = .landing })
+        case .signup:
+            AuthView(initialIsSignUp: true, onBack: { unauthenticatedScreen = .landing })
         }
     }
 

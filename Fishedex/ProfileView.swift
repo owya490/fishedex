@@ -9,7 +9,7 @@ struct ProfileView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            profileHeader
+            AppHeaderView(onBack: { dismiss() }, showsProfileButton: false)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
@@ -23,35 +23,6 @@ struct ProfileView: View {
             }
         }
         .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
-    }
-
-    private var profileHeader: some View {
-        HStack(spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(Color.black.opacity(0.25))
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(.black, lineWidth: 2))
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            Text("FISHÉDEX")
-                .font(FishedexFont.header)
-                .italic()
-                .foregroundStyle(.white)
-
-            Spacer()
-
-            ProfileAvatarView(urlString: profile?.avatarUrl, size: 36)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(FishedexTheme.headerRed)
     }
 
     private var identityCard: some View {

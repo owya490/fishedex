@@ -26,6 +26,7 @@
 		EE3333332C80000100B1A001 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE4444442C80000100B1A001 /* SessionManager.swift */; };
 		EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6666662C80000100B1A001 /* AnglerProfile.swift */; };
 		EE7777772C80000100B1A001 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8888882C80000100B1A001 /* AuthView.swift */; };
+		FF1111112C80000100B1A001 /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2222222C80000100B1A001 /* LandingView.swift */; };
 		EE9999992C80000100B1A001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAAAAAA2C80000100B1A001 /* ProfileView.swift */; };
 		EE1A4C9B2C80000100B1A002 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = EE1A4C9A2C80000100B1A001 /* Supabase */; };
 /* End PBXBuildFile section */
@@ -52,6 +53,7 @@
 		EE4444442C80000100B1A001 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		EE6666662C80000100B1A001 /* AnglerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnglerProfile.swift; sourceTree = "<group>"; };
 		EE8888882C80000100B1A001 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		FF2222222C80000100B1A001 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandingView.swift; sourceTree = "<group>"; };
 		EEAAAAAA2C80000100B1A001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -96,6 +98,7 @@
 				EE4444442C80000100B1A001 /* SessionManager.swift */,
 				EE6666662C80000100B1A001 /* AnglerProfile.swift */,
 				EE8888882C80000100B1A001 /* AuthView.swift */,
+				FF2222222C80000100B1A001 /* LandingView.swift */,
 				EEAAAAAA2C80000100B1A001 /* ProfileView.swift */,
 				0F1A4C8F2C80000100B1A001 /* ContentView.swift */,
 				0F1A4C9A2C80000100B1A001 /* Fish.swift */,
@@ -212,6 +215,7 @@
 				EE3333332C80000100B1A001 /* SessionManager.swift in Sources */,
 				EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */,
 				EE7777772C80000100B1A001 /* AuthView.swift in Sources */,
+				FF1111112C80000100B1A001 /* LandingView.swift in Sources */,
 				EE9999992C80000100B1A001 /* ProfileView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
