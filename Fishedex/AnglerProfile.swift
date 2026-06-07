@@ -50,6 +50,7 @@ struct UserCatchRow: Codable, Identifiable {
     let latitude: Double?
     let longitude: Double?
     let notes: String?
+    let bait: String?
     let photoUrl: String?
     let caughtAt: Date
 
@@ -66,9 +67,29 @@ struct UserCatchRow: Codable, Identifiable {
         case weightKg = "weight_kg"
         case lengthCm = "length_cm"
         case locationName = "location_name"
-        case latitude, longitude, notes
+        case latitude, longitude, notes, bait
         case photoUrl = "photo_url"
         case caughtAt = "caught_at"
+    }
+}
+
+struct CatchPhotoRow: Codable, Identifiable {
+    let id: UUID
+    let catchId: UUID
+    let userId: UUID
+    let photoUrl: String
+    let storagePath: String
+    let sortOrder: Int
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case catchId = "catch_id"
+        case userId = "user_id"
+        case photoUrl = "photo_url"
+        case storagePath = "storage_path"
+        case sortOrder = "sort_order"
+        case createdAt = "created_at"
     }
 }
 
@@ -81,8 +102,19 @@ struct LogCatchInput {
     var latitude: Double?
     var longitude: Double?
     var caughtAt: Date
+    var bait: String?
     var notes: String?
     var photoData: Data?
+}
+
+struct UpdateCatchInput {
+    var customName: String?
+    var weightKg: Double?
+    var lengthCm: Double?
+    var locationName: String?
+    var bait: String?
+    var notes: String?
+    var caughtAt: Date?
 }
 
 struct AchievementRow: Codable, Identifiable {

@@ -5,14 +5,18 @@ import SwiftUI
 private enum DexMode { case dex, myFish }
 
 struct DexView: View {
+    @EnvironmentObject private var session: SessionManager
+
     let fish: [Fish]
     @Binding var hidesBottomTabBar: Bool
     var onLogoTap: (() -> Void)? = nil
 
-    @State private var searchText   = ""
+    @State private var searchText = ""
     @State private var dexMode: DexMode = .dex
     @State private var selectedFish: Fish?
+    @State private var selectedCatchID: UUID?
     @State private var fishForDetail: Fish?
+    @State private var catchIDForDetail: UUID?
 
     init(
         fish: [Fish],
@@ -26,56 +30,146 @@ struct DexView: View {
     }
 
     private var displayedFish: [Fish] {
-        let base = dexMode == .dex ? fish : fish.filter(\.caught)
-        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return base }
-        return base.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return fish }
+        return fish.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    private var displayedCatches: [UserCatchRow] {
+        let base = session.catches.sorted { $0.caughtAt > $1.caughtAt }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return base }
+        return base.filter { catchRow in
+            session.catchTitle(for: catchRow).localizedCaseInsensitiveContains(query)
+                || session.catchSpeciesName(for: catchRow).localizedCaseInsensitiveContains(query)
+                || (catchRow.locationName?.localizedCaseInsensitiveContains(query) ?? false)
+        }
+    }
+
+    private var selectedCatch: UserCatchRow? {
+        if let selectedCatchID,
+           let match = displayedCatches.first(where: { $0.id == selectedCatchID }) {
+            return match
+        }
+        return displayedCatches.first
     }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                AppHeaderView(onLogoTap: onLogoTap)
+            dexRoot
+                .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
+                .navigationDestination(item: $fishForDetail) { fish in
+                    FishDetailView(fish: fish)
+                }
+                .navigationDestination(item: $catchIDForDetail) { catchID in
+                    CatchDetailDestination(catchID: catchID)
+                }
+                .onAppear { applyHighlightedCatchIfNeeded() }
+                .onChange(of: dexMode, handleDexModeChange)
+                .onChange(of: session.highlightedCatchID) { _, _ in applyHighlightedCatchIfNeeded() }
+                .onChange(of: session.catches.count) { _, _ in syncSelectedCatch() }
+                .onChange(of: fishForDetail, updateTabBarFromFishDetail)
+                .onChange(of: catchIDForDetail, updateTabBarFromCatchDetail)
+        }
+    }
 
-                DexSearchBar(text: $searchText)
+    private var dexRoot: some View {
+        VStack(spacing: 0) {
+            AppHeaderView(onLogoTap: onLogoTap)
+            DexSearchBar(
+                text: $searchText,
+                placeholder: dexMode == .dex ? "Search Dex..." : "Search your catches..."
+            )
+            DexModeToggle(mode: $dexMode)
+            splitPanel
+        }
+    }
 
-                DexModeToggle(mode: $dexMode)
+    private var splitPanel: some View {
+        HStack(spacing: 0) {
+            leftPanel.frame(width: 128)
+            panelDivider
+            rightPanel.frame(maxWidth: .infinity)
+        }
+        .frame(maxHeight: .infinity)
+    }
 
-                HStack(spacing: 0) {
-                    DexFishList(
-                        fish: displayedFish,
-                        selectedFish: $selectedFish
-                    )
-                    .frame(width: 128)
+    private var panelDivider: some View {
+        Rectangle()
+            .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
+            .frame(width: 1)
+    }
 
-                    Rectangle()
-                        .fill(Color(red: 0.86, green: 0.86, blue: 0.87))
-                        .frame(width: 1)
+    @ViewBuilder
+    private var leftPanel: some View {
+        if dexMode == .dex {
+            DexFishList(fish: displayedFish, selectedFish: $selectedFish)
+        } else {
+            DexCatchList(catches: displayedCatches, selectedCatchID: $selectedCatchID)
+        }
+    }
 
-                    if dexMode == .myFish && displayedFish.isEmpty {
-                        DexMyFishEmptyState()
-                            .frame(maxWidth: .infinity)
-                    } else if let selectedFish {
-                        DexDetailPanel(fish: selectedFish) {
-                            if selectedFish.caught {
-                                fishForDetail = selectedFish
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
+    @ViewBuilder
+    private var rightPanel: some View {
+        if dexMode == .dex {
+            if let selectedFish {
+                DexDetailPanel(fish: selectedFish) {
+                    openFishDetail(for: selectedFish)
+                }
+            }
+        } else if displayedCatches.isEmpty {
+            DexMyFishEmptyState()
+        } else if let selectedCatch {
+            DexCatchDetailPanel(
+                catchRow: selectedCatch,
+                onOpenCatchDetail: { catchIDForDetail = selectedCatch.id },
+                onOpenSpeciesDetail: {
+                    if let fish = session.fish(for: selectedCatch) {
+                        fishForDetail = fish
                     }
                 }
-                .frame(maxHeight: .infinity)
-            }
-            .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
-            .navigationDestination(item: $fishForDetail) { fish in
-                FishDetailView(fish: fish)
-            }
-            .onChange(of: dexMode) { _, _ in
-                selectedFish = displayedFish.first
-            }
-            .onChange(of: fishForDetail) { _, fish in
-                hidesBottomTabBar = fish != nil
-            }
+            )
         }
+    }
+
+    private func openFishDetail(for fish: Fish) {
+        if fish.caught { fishForDetail = fish }
+    }
+
+    private func handleDexModeChange(_: DexMode, _ mode: DexMode) {
+        searchText = ""
+        if mode == .dex {
+            selectedFish = displayedFish.first
+        } else {
+            syncSelectedCatch()
+        }
+    }
+
+    private func updateTabBarFromFishDetail(_: Fish?, _ fish: Fish?) {
+        updateTabBarHidden(fishDetail: fish, catchDetail: catchIDForDetail)
+    }
+
+    private func updateTabBarFromCatchDetail(_: UUID?, _ catchID: UUID?) {
+        updateTabBarHidden(fishDetail: fishForDetail, catchDetail: catchID)
+    }
+
+    private func applyHighlightedCatchIfNeeded() {
+        guard let catchID = session.highlightedCatchID else { return }
+        dexMode = .myFish
+        selectedCatchID = catchID
+        session.clearHighlightedCatch()
+    }
+
+    private func syncSelectedCatch() {
+        guard dexMode == .myFish else { return }
+        if let selectedCatchID,
+           displayedCatches.contains(where: { $0.id == selectedCatchID }) {
+            return
+        }
+        selectedCatchID = displayedCatches.first?.id
+    }
+
+    private func updateTabBarHidden(fishDetail: Fish?, catchDetail: UUID?) {
+        hidesBottomTabBar = fishDetail != nil || catchDetail != nil
     }
 }
 
@@ -83,13 +177,14 @@ struct DexView: View {
 
 private struct DexSearchBar: View {
     @Binding var text: String
+    var placeholder: String = "Search Dex..."
 
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(FishedexTheme.muted)
 
-            TextField("Search Dex...", text: $text)
+            TextField(placeholder, text: $text)
                 .font(FishedexFont.subheadline)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
@@ -203,7 +298,213 @@ private struct DexFishCell: View {
     }
 }
 
+// MARK: - My Fish catch list
+
+private struct DexCatchList: View {
+    @EnvironmentObject private var session: SessionManager
+
+    let catches: [UserCatchRow]
+    @Binding var selectedCatchID: UUID?
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 6) {
+                ForEach(catches) { catchRow in
+                    DexCatchCell(
+                        catchRow: catchRow,
+                        isSelected: selectedCatchID == catchRow.id
+                    )
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            selectedCatchID = catchRow.id
+                        }
+                    }
+                }
+            }
+            .padding(8)
+        }
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
+    }
+}
+
+private struct DexCatchCell: View {
+    @EnvironmentObject private var session: SessionManager
+
+    let catchRow: UserCatchRow
+    let isSelected: Bool
+
+    private var fish: Fish? { session.fish(for: catchRow) }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Group {
+                if let fish {
+                    FishArtworkView(fish: fish, height: 68, showsShadow: false)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    MysteryFishSilhouetteView()
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, 4)
+
+            Text(session.catchTitle(for: catchRow).uppercased())
+                .font(FishedexFont.micro)
+                .foregroundStyle(isSelected ? .white : FishedexTheme.ink)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity)
+
+            Text(session.catchSpeciesName(for: catchRow).uppercased())
+                .font(FishedexFont.micro)
+                .foregroundStyle(isSelected ? .white.opacity(0.78) : FishedexTheme.muted)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.bottom, 8)
+        .padding(.horizontal, 4)
+        .background(isSelected ? FishedexTheme.ocean : Color.white)
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: isSelected ? 2 : 1)
+    }
+}
+
+// MARK: - My Fish catch detail panel
+
+private struct DexCatchDetailPanel: View {
+    @EnvironmentObject private var session: SessionManager
+
+    let catchRow: UserCatchRow
+    let onOpenCatchDetail: () -> Void
+    let onOpenSpeciesDetail: () -> Void
+
+    private var fish: Fish? { session.fish(for: catchRow) }
+    private var accent: Color {
+        fish.map { FishedexTheme.accent(for: $0) } ?? FishedexTheme.tabBlue
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                Button(action: onOpenSpeciesDetail) {
+                    Group {
+                        if let fish {
+                            FishArtworkView(fish: fish, height: 120, showsShadow: true)
+                        } else {
+                            MysteryFishSilhouetteView()
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(accent.opacity(0.08))
+                }
+                .buttonStyle(.plain)
+                .disabled(fish == nil)
+                .padding(.top, 14)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(session.catchTitle(for: catchRow).uppercased())
+                            .font(FishedexFont.title2)
+                            .foregroundStyle(FishedexTheme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if fish != nil {
+                            Button(action: onOpenSpeciesDetail) {
+                                Text(session.catchSpeciesName(for: catchRow).uppercased())
+                                    .font(FishedexFont.subheadline)
+                                    .foregroundStyle(FishedexTheme.tabBlue)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Text(session.catchSpeciesName(for: catchRow).uppercased())
+                                .font(FishedexFont.subheadline)
+                                .foregroundStyle(FishedexTheme.tabBlue)
+                        }
+                    }
+
+                    VStack(spacing: 8) {
+                        DexCatchFactLine(
+                            label: "CAUGHT",
+                            value: catchRow.caughtAt.formatted(date: .abbreviated, time: .shortened)
+                        )
+                        if let location = catchRow.locationName, !location.isEmpty {
+                            DexCatchFactLine(label: "LOCATION", value: location)
+                        }
+                        if let weight = catchRow.weightKg {
+                            DexCatchFactLine(label: "WEIGHT", value: String(format: "%.1f kg", weight))
+                        }
+                        if let length = catchRow.lengthCm {
+                            DexCatchFactLine(label: "LENGTH", value: String(format: "%.0f cm", length))
+                        }
+                        if let bait = catchRow.bait, !bait.isEmpty {
+                            DexCatchFactLine(label: "BAIT", value: bait)
+                        }
+                    }
+
+                    if let notes = catchRow.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(FishedexFont.caption)
+                            .foregroundStyle(FishedexTheme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Button(action: onOpenCatchDetail) {
+                        Text("VIEW DETAILS")
+                            .font(FishedexFont.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(FishedexTheme.tabBlue)
+                            .fishedexSquare()
+                            .fishedexBorder()
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+            }
+        }
+        .background(Color.white)
+    }
+}
+
+private struct DexCatchFactLine: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(label)
+                .font(FishedexFont.micro)
+                .foregroundStyle(FishedexTheme.muted)
+                .frame(width: 64, alignment: .leading)
+
+            Text(value.uppercased())
+                .font(FishedexFont.caption)
+                .foregroundStyle(FishedexTheme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
 // MARK: - Right detail panel
+
+private struct CatchDetailDestination: View {
+    @EnvironmentObject private var session: SessionManager
+    let catchID: UUID
+
+    var body: some View {
+        CatchDetailView(catchID: catchID)
+    }
+}
 
 private struct DexDetailPanel: View {
     let fish: Fish

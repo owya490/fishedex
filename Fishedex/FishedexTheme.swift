@@ -40,6 +40,8 @@ enum FishedexTheme {
     static let tabGreen    = Color(red: 0.26, green: 0.75, blue: 0.39)
     static let tabBlue     = Color(red: 0.24, green: 0.48, blue: 0.85)
     static let progressGreen = Color(red: 0.20, green: 0.78, blue: 0.36)
+    static let progressBlue  = tabBlue
+    static let progressTrack = Color(red: 0.86, green: 0.86, blue: 0.87)
 
     static func accent(for fish: Fish) -> Color {
         switch fish.id {
@@ -49,6 +51,30 @@ enum FishedexTheme {
         case 4:  return Color(red: 0.28, green: 0.46, blue: 0.52)
         default: return Color(red: 0.93, green: 0.70, blue: 0.18)
         }
+    }
+}
+
+struct FishedexProgressBar: View {
+    let progress: Double
+    var height: CGFloat = 14
+
+    private var clampedProgress: CGFloat {
+        CGFloat(min(max(progress, 0), 1))
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            Rectangle()
+                .fill(FishedexTheme.progressTrack)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(FishedexTheme.progressBlue)
+                        .frame(width: proxy.size.width * clampedProgress)
+                }
+        }
+        .frame(height: height)
+        .fishedexBorder(lineWidth: 1)
+        .animation(.easeOut(duration: 0.25), value: clampedProgress)
     }
 }
 

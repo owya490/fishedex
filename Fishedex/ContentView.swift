@@ -80,7 +80,7 @@ struct ContentView: View {
         case .catch_:
             CatchView(
                 onBack: { selectedTab = .map },
-                onCatchLogged: { selectedTab = .map }
+                onCatchLogged: { selectedTab = .dex }
             )
         case .dex:
             DexView(

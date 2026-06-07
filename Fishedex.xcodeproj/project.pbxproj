@@ -18,6 +18,7 @@
 		0F1A4CA52C80000100B1A001 /* FishDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */; };
 		0F1A4CA72C80000100B1A001 /* CatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A4CA62C80000100B1A001 /* CatchView.swift */; };
 		AA1111112C80000100B1A001 /* CatchSuccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2222222C80000100B1A001 /* CatchSuccessView.swift */; };
+		AA3333332C80000100B1A001 /* CatchDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4444442C80000100B1A001 /* CatchDetailView.swift */; };
 		BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222C80000100B1A001 /* FishingSpot.swift */; };
 		BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444442C80000100B1A001 /* AppHeaderView.swift */; };
 		BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6666662C80000100B1A001 /* CustomTabBar.swift */; };
@@ -25,12 +26,19 @@
 		CC1111112C80000100B1A001 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2222222C80000100B1A001 /* CameraManager.swift */; };
 		DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2222222C80000100B1A001 /* LocationWeatherManager.swift */; };
 		EE1111112C80000100B1A001 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2222222C80000100B1A001 /* SupabaseClient.swift */; };
+		HH1111112C80000100B1A001 /* UserStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = HH2222222C80000100B1A001 /* UserStorage.swift */; };
+		HH3333332C80000100B1A001 /* ImageCompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = HH4444442C80000100B1A001 /* ImageCompressor.swift */; };
+		HH5555552C80000100B1A001 /* PhotoGalleryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = HH6666662C80000100B1A001 /* PhotoGalleryViews.swift */; };
 		EE1A4C9B2C80000100B1A002 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = EE1A4C9A2C80000100B1A001 /* Supabase */; };
 		EE3333332C80000100B1A001 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE4444442C80000100B1A001 /* SessionManager.swift */; };
 		EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6666662C80000100B1A001 /* AnglerProfile.swift */; };
 		EE7777772C80000100B1A001 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8888882C80000100B1A001 /* AuthView.swift */; };
 		EE9999992C80000100B1A001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAAAAAA2C80000100B1A001 /* ProfileView.swift */; };
 		FF1111112C80000100B1A001 /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2222222C80000100B1A001 /* LandingView.swift */; };
+		GG1111112C80000100B1A001 /* AchievementContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG2222222C80000100B1A001 /* AchievementContext.swift */; };
+		GG3333332C80000100B1A001 /* AchievementLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG4444442C80000100B1A001 /* AchievementLogic.swift */; };
+		GG5555552C80000100B1A001 /* AchievementEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG6666662C80000100B1A001 /* AchievementEvaluator.swift */; };
+		GG7777772C80000100B1A001 /* FirstCatchAchievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG8888882C80000100B1A001 /* FirstCatchAchievement.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +54,7 @@
 		0F1A4C9F2C80000100B1A001 /* FishDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishDetailView.swift; sourceTree = "<group>"; };
 		0F1A4CA62C80000100B1A001 /* CatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchView.swift; sourceTree = "<group>"; };
 		AA2222222C80000100B1A001 /* CatchSuccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchSuccessView.swift; sourceTree = "<group>"; };
+		AA4444442C80000100B1A001 /* CatchDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchDetailView.swift; sourceTree = "<group>"; };
 		A89AE23A2FD5C47E007A0E46 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BB2222222C80000100B1A001 /* FishingSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpot.swift; sourceTree = "<group>"; };
 		BB4444442C80000100B1A001 /* AppHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHeaderView.swift; sourceTree = "<group>"; };
@@ -54,11 +63,18 @@
 		CC2222222C80000100B1A001 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		DD2222222C80000100B1A001 /* LocationWeatherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationWeatherManager.swift; sourceTree = "<group>"; };
 		EE2222222C80000100B1A001 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
+		HH2222222C80000100B1A001 /* UserStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStorage.swift; sourceTree = "<group>"; };
+		HH4444442C80000100B1A001 /* ImageCompressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCompressor.swift; sourceTree = "<group>"; };
+		HH6666662C80000100B1A001 /* PhotoGalleryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGalleryViews.swift; sourceTree = "<group>"; };
 		EE4444442C80000100B1A001 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		EE6666662C80000100B1A001 /* AnglerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnglerProfile.swift; sourceTree = "<group>"; };
 		EE8888882C80000100B1A001 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		EEAAAAAA2C80000100B1A001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		FF2222222C80000100B1A001 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandingView.swift; sourceTree = "<group>"; };
+		GG2222222C80000100B1A001 /* AchievementContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementContext.swift; sourceTree = "<group>"; };
+		GG4444442C80000100B1A001 /* AchievementLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementLogic.swift; sourceTree = "<group>"; };
+		GG6666662C80000100B1A001 /* AchievementEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementEvaluator.swift; sourceTree = "<group>"; };
+		GG8888882C80000100B1A001 /* FirstCatchAchievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstCatchAchievement.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -93,13 +109,36 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		GG9999992C80000100B1A001 /* FirstCatch */ = {
+			isa = PBXGroup;
+			children = (
+				GG8888882C80000100B1A001 /* FirstCatchAchievement.swift */,
+			);
+			path = FirstCatch;
+			sourceTree = "<group>";
+		};
+		GGAAAAAA2C80000100B1A001 /* Achievements */ = {
+			isa = PBXGroup;
+			children = (
+				GG2222222C80000100B1A001 /* AchievementContext.swift */,
+				GG4444442C80000100B1A001 /* AchievementLogic.swift */,
+				GG6666662C80000100B1A001 /* AchievementEvaluator.swift */,
+				GG9999992C80000100B1A001 /* FirstCatch */,
+			);
+			path = Achievements;
+			sourceTree = "<group>";
+		};
 		0F1A4C8C2C80000100B1A001 /* Fishedex */ = {
 			isa = PBXGroup;
 			children = (
 				A89AE23A2FD5C47E007A0E46 /* Info.plist */,
 				0F1A4C8D2C80000100B1A001 /* FishedexApp.swift */,
 				EE2222222C80000100B1A001 /* SupabaseClient.swift */,
+				HH2222222C80000100B1A001 /* UserStorage.swift */,
+				HH4444442C80000100B1A001 /* ImageCompressor.swift */,
+				HH6666662C80000100B1A001 /* PhotoGalleryViews.swift */,
 				EE4444442C80000100B1A001 /* SessionManager.swift */,
+				GGAAAAAA2C80000100B1A001 /* Achievements */,
 				EE6666662C80000100B1A001 /* AnglerProfile.swift */,
 				EE8888882C80000100B1A001 /* AuthView.swift */,
 				FF2222222C80000100B1A001 /* LandingView.swift */,
@@ -115,6 +154,7 @@
 				0F1A4C9D2C80000100B1A001 /* DashboardView.swift */,
 				0F1A4CA62C80000100B1A001 /* CatchView.swift */,
 				AA2222222C80000100B1A001 /* CatchSuccessView.swift */,
+				AA4444442C80000100B1A001 /* CatchDetailView.swift */,
 				CC2222222C80000100B1A001 /* CameraManager.swift */,
 				DD2222222C80000100B1A001 /* LocationWeatherManager.swift */,
 				0F1A4C9E2C80000100B1A001 /* FishedexListView.swift */,
@@ -210,6 +250,7 @@
 				0F1A4CA32C80000100B1A001 /* DashboardView.swift in Sources */,
 				0F1A4CA72C80000100B1A001 /* CatchView.swift in Sources */,
 				AA1111112C80000100B1A001 /* CatchSuccessView.swift in Sources */,
+				AA3333332C80000100B1A001 /* CatchDetailView.swift in Sources */,
 				0F1A4CA12C80000100B1A001 /* FishedexTheme.swift in Sources */,
 				0F1A4CA22C80000100B1A001 /* FishArtworkView.swift in Sources */,
 				0F1A4C8E2C80000100B1A001 /* FishedexApp.swift in Sources */,
@@ -220,11 +261,18 @@
 				CC1111112C80000100B1A001 /* CameraManager.swift in Sources */,
 				DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */,
 				EE1111112C80000100B1A001 /* SupabaseClient.swift in Sources */,
+				HH1111112C80000100B1A001 /* UserStorage.swift in Sources */,
+				HH3333332C80000100B1A001 /* ImageCompressor.swift in Sources */,
+				HH5555552C80000100B1A001 /* PhotoGalleryViews.swift in Sources */,
 				EE3333332C80000100B1A001 /* SessionManager.swift in Sources */,
 				EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */,
 				EE7777772C80000100B1A001 /* AuthView.swift in Sources */,
 				FF1111112C80000100B1A001 /* LandingView.swift in Sources */,
 				EE9999992C80000100B1A001 /* ProfileView.swift in Sources */,
+				GG1111112C80000100B1A001 /* AchievementContext.swift in Sources */,
+				GG3333332C80000100B1A001 /* AchievementLogic.swift in Sources */,
+				GG5555552C80000100B1A001 /* AchievementEvaluator.swift in Sources */,
+				GG7777772C80000100B1A001 /* FirstCatchAchievement.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

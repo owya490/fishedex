@@ -130,7 +130,7 @@ struct ProfileView: View {
                 }
             }
 
-            ProfileProgressBlocks(progress: stats.progress, total: 10)
+            FishedexProgressBar(progress: stats.progress)
 
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -170,11 +170,10 @@ struct ProfileView: View {
                     .foregroundStyle(FishedexTheme.muted)
             }
 
-            ProfileProgressBlocks(
+            FishedexProgressBar(
                 progress: stats.totalAchievements > 0
                     ? Double(stats.unlockedAchievements) / Double(stats.totalAchievements)
-                    : 0,
-                total: 10
+                    : 0
             )
 
             ForEach(session.achievements.prefix(5)) { achievement in
@@ -273,24 +272,6 @@ struct ProfileAvatarView: View {
             Image(systemName: "person.fill")
                 .font(.system(size: size * 0.4, weight: .semibold))
                 .foregroundStyle(FishedexTheme.muted)
-        }
-    }
-}
-
-private struct ProfileProgressBlocks: View {
-    let progress: Double
-    let total: Int
-
-    private var filled: Int { Int(Double(total) * min(max(progress, 0), 1)) }
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<total, id: \.self) { index in
-                Rectangle()
-                    .fill(index < filled ? FishedexTheme.progressGreen : Color(red: 0.86, green: 0.86, blue: 0.87))
-                    .frame(height: 14)
-                    .frame(maxWidth: .infinity)
-            }
         }
     }
 }

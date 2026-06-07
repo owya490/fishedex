@@ -6,6 +6,7 @@ struct FishDetailView: View {
 
     let fish: Fish
     @State private var selectedTab: FishDetailTab = .about
+    @State private var viewerPhotoIndex: Int?
 
     private var accent: Color {
         FishedexTheme.accent(for: fish)
@@ -19,7 +20,7 @@ struct FishDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AppHeaderView(onBack: { dismiss() }, showsProfileButton: false)
+            AppHeaderView(onBack: { dismiss() })
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
@@ -34,6 +35,23 @@ struct FishDetailView: View {
         .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .fullScreenCover(isPresented: viewerPresented) {
+            PhotoViewerOverlay(
+                photos: speciesPhotos,
+                selectedIndex: $viewerPhotoIndex
+            )
+        }
+    }
+
+    private var speciesPhotos: [CatchPhotoRow] {
+        session.photos(forSpecies: fish.id)
+    }
+
+    private var viewerPresented: Binding<Bool> {
+        Binding(
+            get: { viewerPhotoIndex != nil },
+            set: { if !$0 { viewerPhotoIndex = nil } }
+        )
     }
 
     private var heroCard: some View {
@@ -180,27 +198,26 @@ struct FishDetailView: View {
 
     private var galleryContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("GALLERY")
+            Text("SPECIES GALLERY")
                 .font(FishedexFont.caption)
                 .foregroundStyle(FishedexTheme.muted)
                 .kerning(0.6)
 
-            if speciesCatches.isEmpty {
+            Text("All photos from every catch of this species.")
+                .font(FishedexFont.caption)
+                .foregroundStyle(FishedexTheme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if speciesPhotos.isEmpty {
                 FishEmptyStateView(
-                    message: "You have not caught any fish or uploaded any photos of this fish."
+                    message: "You have not caught any fish or uploaded any photos of this species."
                 )
             } else {
-                LazyVGrid(
-                    columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-                    spacing: 8
-                ) {
-                    ForEach(speciesCatches) { catchRow in
-                        FishGalleryTile(
-                            label: catchRow.caughtAt.formatted(date: .abbreviated, time: .omitted).uppercased(),
-                            imageName: fish.imageName
-                        )
-                    }
-                }
+                CatchPhotoGalleryGrid(
+                    photos: speciesPhotos,
+                    fish: fish,
+                    onPhotoTap: { viewerPhotoIndex = $0 }
+                )
             }
         }
     }
@@ -219,7 +236,12 @@ struct FishDetailView: View {
             } else {
                 VStack(spacing: 8) {
                     ForEach(speciesCatches) { catchRow in
-                        YourFishCatchRow(catchRow: catchRow, fish: fish)
+                        NavigationLink {
+                            CatchDetailView(catchID: catchRow.id)
+                        } label: {
+                            YourFishCatchRow(catchRow: catchRow, fish: fish, session: session)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -278,49 +300,26 @@ private struct DetailFactRow: View {
     }
 }
 
-private struct FishGalleryTile: View {
-    let label: String
-    let imageName: String
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Image(imageName)
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
-                .frame(height: 72)
-                .frame(maxWidth: .infinity)
-
-            Text(label)
-                .font(FishedexFont.micro)
-                .foregroundStyle(FishedexTheme.muted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .padding(8)
-        .frame(maxWidth: .infinity)
-        .background(Color(red: 0.95, green: 0.95, blue: 0.96))
-        .fishedexSquare()
-        .fishedexBorder(lineWidth: 1)
-    }
-}
-
 private struct YourFishCatchRow: View {
     let catchRow: UserCatchRow
     let fish: Fish
+    let session: SessionManager
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(fish.imageName)
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
+            FishArtworkView(fish: fish, height: 44, showsShadow: false)
                 .frame(width: 48, height: 48)
+                .fishedexSquare()
+                .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(fish.name.uppercased())
+                Text(session.catchTitle(for: catchRow).uppercased())
                     .font(FishedexFont.subheadline)
                     .foregroundStyle(FishedexTheme.ink)
+
+                Text(session.catchSpeciesName(for: catchRow).uppercased())
+                    .font(FishedexFont.caption)
+                    .foregroundStyle(FishedexTheme.tabBlue)
 
                 Text(catchRow.caughtAt.formatted(date: .abbreviated, time: .shortened))
                     .font(FishedexFont.caption)

@@ -30,6 +30,7 @@ struct CatchSuccessView: View {
     @State private var catchDate: Date
     @State private var lengthCm = ""
     @State private var weightKg = ""
+    @State private var bait = ""
     @State private var notes = ""
     @State private var saveError: String?
 
@@ -417,12 +418,14 @@ struct CatchSuccessView: View {
                     .keyboardType(.decimalPad)
             }
 
+            catchField("BAIT", text: $bait, prompt: "e.g. Prawn, lure, worm")
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("NOTES")
                     .font(FishedexFont.caption)
                     .foregroundStyle(FishedexTheme.muted)
 
-                TextField("Bait, weather, story...", text: $notes, axis: .vertical)
+                TextField("Weather, story...", text: $notes, axis: .vertical)
                     .font(FishedexFont.body)
                     .lineLimit(3...6)
                     .padding(12)
@@ -512,8 +515,9 @@ struct CatchSuccessView: View {
             latitude: initialCoordinate?.latitude,
             longitude: initialCoordinate?.longitude,
             caughtAt: catchDate,
+            bait: bait.nilIfEmpty,
             notes: notes.nilIfEmpty,
-            photoData: capturedImage.jpegData(compressionQuality: 0.85)
+            photoData: ImageCompressor.compressedJPEGData(from: capturedImage)
         )
 
         Task {

@@ -30,7 +30,12 @@ struct MapTabView: View {
     var body: some View {
         VStack(spacing: 0) {
             AppHeaderView(onLogoTap: onLogoTap)
-            CollectionProgressCard(caughtCount: caughtCount, total: fish.count, progress: progress)
+            DashboardBannerCarousel(
+                caughtCount: caughtCount,
+                total: fish.count,
+                progress: progress,
+                location: location
+            )
             mapSection
         }
         .background(Color.white.ignoresSafeArea())
@@ -113,6 +118,153 @@ struct MapTabView: View {
     }
 }
 
+// MARK: - Dashboard banner carousel
+
+private struct DashboardBannerCarousel: View {
+    let caughtCount: Int
+    let total: Int
+    let progress: Double
+    @ObservedObject var location: LocationWeatherManager
+
+    @State private var page = 0
+    @State private var carouselTimer: AnyCancellable?
+
+    var body: some View {
+        VStack(spacing: 8) {
+            TabView(selection: $page) {
+                CollectionProgressCard(
+                    caughtCount: caughtCount,
+                    total: total,
+                    progress: progress
+                )
+                .tag(0)
+
+                WeatherInfoBanner(location: location)
+                    .tag(1)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 108)
+            .animation(.easeInOut(duration: 0.45), value: page)
+
+            HStack(spacing: 6) {
+                ForEach(0..<2, id: \.self) { index in
+                    Rectangle()
+                        .fill(index == page ? FishedexTheme.ocean : FishedexTheme.progressTrack)
+                        .frame(width: index == page ? 14 : 6, height: 6)
+                        .animation(.easeInOut(duration: 0.25), value: page)
+                }
+            }
+            .padding(.bottom, 4)
+        }
+        .background(Color.white)
+        .onAppear { startCarousel() }
+        .onDisappear { carouselTimer = nil }
+    }
+
+    private func startCarousel() {
+        carouselTimer = Timer.publish(every: 30, on: .main, in: .common)
+            .autoconnect()
+            .sink { _ in
+                withAnimation(.easeInOut(duration: 0.45)) {
+                    page = (page + 1) % 2
+                }
+            }
+    }
+}
+
+// MARK: - Weather info banner
+
+private struct WeatherInfoBanner: View {
+    @ObservedObject var location: LocationWeatherManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: location.weatherIcon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(FishedexTheme.ocean)
+
+                Text("FISHING CONDITIONS")
+                    .font(FishedexFont.caption)
+                    .foregroundStyle(FishedexTheme.muted)
+                    .kerning(0.8)
+
+                Spacer()
+
+                Text(location.weatherLabel)
+                    .font(FishedexFont.subheadline)
+                    .foregroundStyle(FishedexTheme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            HStack(spacing: 8) {
+                WeatherStatChip(
+                    icon: location.windIcon,
+                    title: "WIND",
+                    value: location.windLabel,
+                    tint: FishedexTheme.tabBlue
+                )
+                WeatherStatChip(
+                    icon: location.pressureIcon,
+                    title: "PRESSURE",
+                    value: location.pressureLabel,
+                    tint: FishedexTheme.ocean
+                )
+                WeatherStatChip(
+                    icon: location.precipitationIcon,
+                    title: "RAIN",
+                    value: location.precipitationLabel,
+                    tint: FishedexTheme.coral
+                )
+                WeatherStatChip(
+                    icon: location.moonPhaseIcon,
+                    title: "MOON",
+                    value: location.moonPhaseLabel,
+                    tint: Color(red: 0.45, green: 0.38, blue: 0.72)
+                )
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+    }
+}
+
+private struct WeatherStatChip: View {
+    let icon: String
+    let title: String
+    let value: String
+    let tint: Color
+
+    var body: some View {
+        VStack(spacing: 5) {
+            ZStack {
+                Rectangle()
+                    .fill(tint.opacity(0.14))
+                    .frame(width: 30, height: 30)
+                    .fishedexBorder(lineWidth: 1, color: tint.opacity(0.35))
+
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(tint)
+            }
+
+            Text(title)
+                .font(FishedexFont.micro)
+                .foregroundStyle(FishedexTheme.muted)
+                .kerning(0.4)
+
+            Text(value)
+                .font(FishedexFont.micro)
+                .foregroundStyle(FishedexTheme.ink)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
 // MARK: - Collection Progress Card
 
 private struct CollectionProgressCard: View {
@@ -141,31 +293,11 @@ private struct CollectionProgressCard: View {
                 }
             }
 
-            CollectionProgressBlocks(progress: progress)
+            FishedexProgressBar(progress: progress)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 10)
         .background(Color.white)
-    }
-}
-
-// MARK: - Progress blocks
-
-private struct CollectionProgressBlocks: View {
-    let progress: Double
-    private let total = 12
-
-    private var filled: Int { Int(Double(total) * min(max(progress, 0), 1)) }
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<total, id: \.self) { i in
-                Rectangle()
-                    .fill(i < filled ? FishedexTheme.progressGreen : Color(red: 0.86, green: 0.86, blue: 0.87))
-                    .frame(height: 14)
-                    .frame(maxWidth: .infinity)
-            }
-        }
     }
 }
 
