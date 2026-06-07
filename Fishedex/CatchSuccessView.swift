@@ -34,7 +34,10 @@ struct CatchSuccessView: View {
     @State private var bait = ""
     @State private var notes = ""
     @State private var saveError: String?
+    @State private var isSavingCatch = false
     @State private var skipSpeciesSearchValidation = false
+
+    private var isSaving: Bool { isSavingCatch || session.isLoggingCatch }
 
     init(
         capturedImage: UIImage,
@@ -335,7 +338,7 @@ struct CatchSuccessView: View {
                 onBack: { step = .reveal; showPixelArt = false },
                 showsProfileButton: false,
                 showsProfileAvatar: false,
-                isBackDisabled: session.isLoggingCatch
+                isBackDisabled: isSaving
             )
 
             ScrollView {
@@ -458,7 +461,7 @@ struct CatchSuccessView: View {
         Button(action: saveCatch) {
             HStack {
                 Spacer()
-                if session.isLoggingCatch {
+                if isSaving {
                     ProgressView().tint(.white)
                 } else {
                     Text("LOG CATCH")
@@ -473,7 +476,7 @@ struct CatchSuccessView: View {
             .fishedexBorder()
         }
         .buttonStyle(.plain)
-        .disabled(session.isLoggingCatch)
+        .disabled(isSaving)
     }
 
     private var background: some View {
@@ -524,9 +527,12 @@ struct CatchSuccessView: View {
     }
 
     private func saveCatch() {
+        guard !isSaving else { return }
         saveError = nil
         dismissKeyboard()
+        isSavingCatch = true
 
+        let image = capturedImage
         let input = LogCatchInput(
             speciesId: selectedSpeciesID,
             fishName: nickname.nilIfEmpty,
@@ -538,12 +544,20 @@ struct CatchSuccessView: View {
             caughtAt: catchDate,
             bait: bait.nilIfEmpty,
             notes: notes.nilIfEmpty,
-            photoData: ImageCompressor.compressedJPEGData(from: capturedImage)
+            photoData: nil
         )
 
         Task {
+            defer { isSavingCatch = false }
+
+            let photoData = await Task.detached(priority: .userInitiated) {
+                ImageCompressor.compressedJPEGData(from: image)
+            }.value
+
             do {
-                try await session.logCatch(input)
+                var catchInput = input
+                catchInput.photoData = photoData
+                try await session.logCatch(catchInput)
                 dismiss()
                 onFinished()
             } catch {

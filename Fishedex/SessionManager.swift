@@ -85,8 +85,7 @@ final class SessionManager: ObservableObject {
         var photoURL: String?
         var initialPhotoID: UUID?
 
-        if let rawPhotoData = input.photoData,
-           let photoData = ImageCompressor.compressedJPEGData(from: rawPhotoData) {
+        if let photoData = input.photoData {
             let photoID = UUID()
             let uploaded = try await uploadCatchPhotoFile(
                 photoData,
