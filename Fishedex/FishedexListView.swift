@@ -382,7 +382,7 @@ private struct DexFishCell: View {
                     FishArtworkView(fish: fish, height: 68, showsShadow: false)
                         .frame(maxWidth: .infinity)
                 } else {
-                    MysteryFishSilhouetteView()
+                    MysteryFishSilhouetteView(height: 68, showsQuestionMark: true)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -646,7 +646,7 @@ private struct DexDetailPanel: View {
             if fish.caught {
                 FishArtworkView(fish: fish, height: 120, showsShadow: true)
             } else {
-                MysteryFishSilhouetteView(height: 120)
+                MysteryFishSilhouetteView(height: 120, showsQuestionMark: true)
             }
         }
         .frame(maxWidth: .infinity)

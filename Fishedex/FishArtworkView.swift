@@ -42,14 +42,23 @@ struct TraitPill: View {
 
 struct MysteryFishSilhouetteView: View {
     var height: CGFloat = 80
+    var showsQuestionMark = false
 
     var body: some View {
-        Image("MysteryFish")
-            .resizable()
-            .interpolation(.none)
-            .scaledToFit()
-            .frame(height: height)
-            .accessibilityLabel(Text("Mystery fish silhouette"))
+        ZStack {
+            Image("MysteryFish")
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+
+            if showsQuestionMark {
+                Text("?")
+                    .font(FishedexFont.pokemon(height * 0.30))
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(height: height)
+        .accessibilityLabel(Text("Mystery fish silhouette"))
     }
 }
 
