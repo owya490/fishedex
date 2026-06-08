@@ -642,14 +642,20 @@ private struct DexDetailPanel: View {
     }
 
     private var artworkCard: some View {
-        FishArtworkView(fish: fish, height: 120, showsShadow: true)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                Rectangle()
-                    .fill(FishedexTheme.accent(for: fish).opacity(0.08))
-                    .padding(.horizontal, 14)
-            )
+        Group {
+            if fish.caught {
+                FishArtworkView(fish: fish, height: 120, showsShadow: true)
+            } else {
+                MysteryFishSilhouetteView(height: 120)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            Rectangle()
+                .fill(FishedexTheme.accent(for: fish).opacity(0.08))
+                .padding(.horizontal, 14)
+        )
     }
 
     private var infoBlock: some View {

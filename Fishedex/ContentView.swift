@@ -1,9 +1,10 @@
 import SwiftUI
 
-private enum UnauthenticatedScreen {
+private enum UnauthenticatedScreen: Equatable {
     case landing
     case login
     case signup
+    case verifyEmail(email: String)
 }
 
 struct ContentView: View {
@@ -34,7 +35,19 @@ struct ContentView: View {
         case .login:
             AuthView(initialIsSignUp: false, onBack: { unauthenticatedScreen = .landing })
         case .signup:
-            AuthView(initialIsSignUp: true, onBack: { unauthenticatedScreen = .landing })
+            AuthView(
+                initialIsSignUp: true,
+                onBack: { unauthenticatedScreen = .landing },
+                onSignUpSuccess: { email in
+                    unauthenticatedScreen = .verifyEmail(email: email)
+                }
+            )
+        case .verifyEmail(let email):
+            VerifyEmailView(
+                email: email,
+                onBack: { unauthenticatedScreen = .signup },
+                onVerified: { unauthenticatedScreen = .login }
+            )
         }
     }
 

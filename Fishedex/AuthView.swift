@@ -5,6 +5,7 @@ struct AuthView: View {
 
     var initialIsSignUp: Bool = false
     var onBack: (() -> Void)? = nil
+    var onSignUpSuccess: ((String) -> Void)? = nil
 
     @State private var email = ""
     @State private var password = ""
@@ -107,11 +108,13 @@ struct AuthView: View {
             defer { isSubmitting = false }
             do {
                 if isSignUp {
+                    let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
                     try await session.signUp(
-                        email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+                        email: trimmedEmail,
                         password: password,
                         displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines)
                     )
+                    onSignUpSuccess?(trimmedEmail)
                 } else {
                     try await session.signIn(
                         email: email.trimmingCharacters(in: .whitespacesAndNewlines),

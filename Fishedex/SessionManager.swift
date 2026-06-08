@@ -67,11 +67,12 @@ final class SessionManager: ObservableObject {
 
     func signUp(email: String, password: String, displayName: String) async throws {
         errorMessage = nil
-        try await supabase.auth.signUp(
+        _ = try await supabase.auth.signUp(
             email: email,
             password: password,
             data: ["display_name": .string(displayName)]
         )
+        try? await supabase.auth.signOut()
     }
 
     func logCatch(_ input: LogCatchInput) async throws -> UUID {

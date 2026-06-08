@@ -36,6 +36,7 @@
 		EE7777772C80000100B1A001 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8888882C80000100B1A001 /* AuthView.swift */; };
 		EE9999992C80000100B1A001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAAAAAA2C80000100B1A001 /* ProfileView.swift */; };
 		FF1111112C80000100B1A001 /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2222222C80000100B1A001 /* LandingView.swift */; };
+		JJ1111112C80000100B1A001 /* VerifyEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = JJ2222222C80000100B1A001 /* VerifyEmailView.swift */; };
 		GG1111112C80000100B1A001 /* AchievementContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG2222222C80000100B1A001 /* AchievementContext.swift */; };
 		GG3333332C80000100B1A001 /* AchievementLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG4444442C80000100B1A001 /* AchievementLogic.swift */; };
 		GG5555552C80000100B1A001 /* AchievementEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG6666662C80000100B1A001 /* AchievementEvaluator.swift */; };
@@ -77,6 +78,7 @@
 		II2222222C80000100B1A001 /* FriendProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendProfileView.swift; sourceTree = "<group>"; };
 		II4444442C80000100B1A001 /* FriendsSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsSectionView.swift; sourceTree = "<group>"; };
 		FF2222222C80000100B1A001 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandingView.swift; sourceTree = "<group>"; };
+		JJ2222222C80000100B1A001 /* VerifyEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyEmailView.swift; sourceTree = "<group>"; };
 		GG2222222C80000100B1A001 /* AchievementContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementContext.swift; sourceTree = "<group>"; };
 		GG4444442C80000100B1A001 /* AchievementLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementLogic.swift; sourceTree = "<group>"; };
 		GG6666662C80000100B1A001 /* AchievementEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementEvaluator.swift; sourceTree = "<group>"; };
@@ -148,6 +150,7 @@
 				GGAAAAAA2C80000100B1A001 /* Achievements */,
 				EE6666662C80000100B1A001 /* AnglerProfile.swift */,
 				EE8888882C80000100B1A001 /* AuthView.swift */,
+				JJ2222222C80000100B1A001 /* VerifyEmailView.swift */,
 				FF2222222C80000100B1A001 /* LandingView.swift */,
 				EEAAAAAA2C80000100B1A001 /* ProfileView.swift */,
 				II2222222C80000100B1A001 /* FriendProfileView.swift */,
@@ -278,6 +281,7 @@
 				EE5555552C80000100B1A001 /* AnglerProfile.swift in Sources */,
 				EE7777772C80000100B1A001 /* AuthView.swift in Sources */,
 				FF1111112C80000100B1A001 /* LandingView.swift in Sources */,
+				JJ1111112C80000100B1A001 /* VerifyEmailView.swift in Sources */,
 				EE9999992C80000100B1A001 /* ProfileView.swift in Sources */,
 				II1111112C80000100B1A001 /* FriendProfileView.swift in Sources */,
 				II3333332C80000100B1A001 /* FriendsSectionView.swift in Sources */,
