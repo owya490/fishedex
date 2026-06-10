@@ -5,6 +5,8 @@ private enum UnauthenticatedScreen: Equatable {
     case login
     case signup
     case verifyEmail(email: String)
+    case forgotPassword
+    case forgotPasswordSent(email: String)
 }
 
 struct ContentView: View {
@@ -33,7 +35,24 @@ struct ContentView: View {
                 onSignUp: { unauthenticatedScreen = .signup }
             )
         case .login:
-            AuthView(initialIsSignUp: false, onBack: { unauthenticatedScreen = .landing })
+            AuthView(
+                initialIsSignUp: false,
+                onBack: { unauthenticatedScreen = .landing },
+                onForgotPassword: { unauthenticatedScreen = .forgotPassword }
+            )
+        case .forgotPassword:
+            ForgotPasswordView(
+                onBack: { unauthenticatedScreen = .login },
+                onEmailSent: { email in
+                    unauthenticatedScreen = .forgotPasswordSent(email: email)
+                }
+            )
+            .environmentObject(session)
+        case .forgotPasswordSent(let email):
+            ForgotPasswordSentView(
+                email: email,
+                onBack: { unauthenticatedScreen = .login }
+            )
         case .signup:
             AuthView(
                 initialIsSignUp: true,
@@ -72,10 +91,17 @@ struct ContentView: View {
                     .environmentObject(session)
                     .transition(.move(edge: .trailing))
             }
+
+            if session.isPasswordRecoveryFlow {
+                ResetPasswordView(context: .recovery)
+                    .environmentObject(session)
+                    .transition(.move(edge: .bottom))
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: session.showProfile)
+        .animation(.easeInOut(duration: 0.25), value: session.isPasswordRecoveryFlow)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if selectedTab != .catch_ && !session.showProfile && !hidesBottomTabBar {
+            if selectedTab != .catch_ && !session.showProfile && !session.isPasswordRecoveryFlow && !hidesBottomTabBar {
                 CustomTabBar(selectedTab: $selectedTab)
             }
         }

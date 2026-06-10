@@ -1,17 +1,12 @@
 import SwiftUI
 
-struct AuthView: View {
+struct ForgotPasswordView: View {
     @EnvironmentObject private var session: SessionManager
 
-    var initialIsSignUp: Bool = false
-    var onBack: (() -> Void)? = nil
-    var onSignUpSuccess: ((String) -> Void)? = nil
-    var onForgotPassword: (() -> Void)? = nil
+    let onBack: () -> Void
+    let onEmailSent: (String) -> Void
 
     @State private var email = ""
-    @State private var password = ""
-    @State private var displayName = ""
-    @State private var isSignUp = false
     @State private var isSubmitting = false
 
     var body: some View {
@@ -20,33 +15,18 @@ struct AuthView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text(isSignUp ? "CREATE ANGLER ID" : "ANGLER LOGIN")
+                    Text("RESET PASSWORD")
                         .font(FishedexFont.title)
                         .foregroundStyle(FishedexTheme.ink)
 
-                    if isSignUp {
-                        authField("DISPLAY NAME", text: $displayName, contentType: .name)
-                    }
+                    Text("Enter the email for your angler account and we'll send a reset link.")
+                        .font(FishedexFont.body)
+                        .foregroundStyle(FishedexTheme.muted)
+                        .lineSpacing(4)
 
                     authField("EMAIL", text: $email, contentType: .emailAddress)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
-
-                    authField("PASSWORD", text: $password, contentType: .password)
-                        .textInputAutocapitalization(.never)
-
-                    if !isSignUp {
-                        Button {
-                            session.errorMessage = nil
-                            onForgotPassword?()
-                        } label: {
-                            Text("Forgot password?")
-                                .font(FishedexFont.caption)
-                                .foregroundStyle(FishedexTheme.ocean)
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
 
                     if let error = session.errorMessage {
                         Text(error)
@@ -60,7 +40,7 @@ struct AuthView: View {
                             if isSubmitting {
                                 ProgressView().tint(.white)
                             } else {
-                                Text(isSignUp ? "SIGN UP" : "SIGN IN")
+                                Text("SEND RESET LINK")
                                     .font(FishedexFont.headline)
                             }
                             Spacer()
@@ -73,31 +53,15 @@ struct AuthView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(isSubmitting || !canSubmit)
-
-                    Button {
-                        isSignUp.toggle()
-                        session.errorMessage = nil
-                    } label: {
-                        Text(isSignUp ? "Already have an account? Sign in" : "New angler? Create account")
-                            .font(FishedexFont.caption)
-                            .foregroundStyle(FishedexTheme.ocean)
-                    }
-                    .buttonStyle(.plain)
                 }
                 .padding(24)
             }
         }
         .background(Color.white.ignoresSafeArea())
-        .onAppear {
-            isSignUp = initialIsSignUp
-        }
-        .onChange(of: initialIsSignUp) { _, newValue in
-            isSignUp = newValue
-        }
     }
 
     private var canSubmit: Bool {
-        !email.isEmpty && password.count >= 6 && (!isSignUp || !displayName.isEmpty)
+        !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func authField(_ label: String, text: Binding<String>, contentType: UITextContentType) -> some View {
@@ -121,20 +85,9 @@ struct AuthView: View {
         Task {
             defer { isSubmitting = false }
             do {
-                if isSignUp {
-                    let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
-                    try await session.signUp(
-                        email: trimmedEmail,
-                        password: password,
-                        displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    )
-                    onSignUpSuccess?(trimmedEmail)
-                } else {
-                    try await session.signIn(
-                        email: email.trimmingCharacters(in: .whitespacesAndNewlines),
-                        password: password
-                    )
-                }
+                let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+                try await session.requestPasswordReset(email: trimmedEmail)
+                onEmailSent(trimmedEmail)
             } catch {
                 session.errorMessage = error.localizedDescription
             }
@@ -142,7 +95,50 @@ struct AuthView: View {
     }
 }
 
+struct ForgotPasswordSentView: View {
+    let email: String
+    let onBack: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            AppHeaderView(onBack: onBack, showsProfileButton: false, showsProfileAvatar: false)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text("CHECK YOUR EMAIL")
+                        .font(FishedexFont.title)
+                        .foregroundStyle(FishedexTheme.ink)
+
+                    Image(systemName: "envelope.badge")
+                        .font(.system(size: 48, weight: .medium))
+                        .foregroundStyle(FishedexTheme.ocean)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("We sent a password reset link to:")
+                            .font(FishedexFont.body)
+                            .foregroundStyle(FishedexTheme.muted)
+
+                        Text(email)
+                            .font(FishedexFont.headline)
+                            .foregroundStyle(FishedexTheme.ink)
+                            .textSelection(.enabled)
+
+                        Text("Open the email and tap the link to reset your password. The link will open Fishedex so you can choose a new password.")
+                            .font(FishedexFont.body)
+                            .foregroundStyle(FishedexTheme.muted)
+                            .lineSpacing(4)
+                    }
+                }
+                .padding(24)
+            }
+        }
+        .background(Color.white.ignoresSafeArea())
+    }
+}
+
 #Preview {
-    AuthView()
+    ForgotPasswordView(onBack: {}, onEmailSent: { _ in })
         .environmentObject(SessionManager())
 }

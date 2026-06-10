@@ -6,6 +6,7 @@ struct ProfileView: View {
 
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var selectedFriendId: UUID?
+    @State private var showAccountSettings = false
 
     private var profile: ProfileRow? { session.profile }
     private var stats: AnglerStats { session.stats }
@@ -18,6 +19,7 @@ struct ProfileView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
                         identityCard
+                        accountSettingsButton
                         collectionCard
                         FriendsSectionView(selectedFriendId: $selectedFriendId)
                         achievementsSection
@@ -30,6 +32,10 @@ struct ProfileView: View {
             .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
             .navigationDestination(item: $selectedFriendId) { friendId in
                 FriendProfileView(friendId: friendId)
+                    .environmentObject(session)
+            }
+            .navigationDestination(isPresented: $showAccountSettings) {
+                AccountSettingsView()
                     .environmentObject(session)
             }
         }
@@ -105,6 +111,38 @@ struct ProfileView: View {
         .fishedexSquare()
         .fishedexBorder()
         .shadow(color: .black.opacity(0.12), radius: 0, x: 3, y: 3)
+    }
+
+    private var accountSettingsButton: some View {
+        Button {
+            showAccountSettings = true
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(FishedexTheme.ocean)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ACCOUNT SETTINGS")
+                        .font(FishedexFont.headline)
+                        .foregroundStyle(FishedexTheme.ink)
+                    Text("Password, security, and account deletion")
+                        .font(FishedexFont.caption)
+                        .foregroundStyle(FishedexTheme.muted)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(FishedexTheme.muted)
+            }
+            .padding(16)
+            .background(Color.white)
+            .fishedexSquare()
+            .fishedexBorder()
+        }
+        .buttonStyle(.plain)
     }
 
     private var collectionCard: some View {

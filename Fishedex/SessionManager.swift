@@ -25,6 +25,8 @@ final class SessionManager: ObservableObject {
     @Published private(set) var incomingFriendRequests: [FriendRequest] = []
     @Published private(set) var outgoingPendingFriends: [FriendSummary] = []
     @Published var showProfile = false
+    @Published private(set) var isPasswordRecoveryFlow = false
+    @Published var isDeletingAccount = false
     @Published var isUploadingAvatar = false
     @Published var isLoggingCatch = false
     @Published var isUpdatingCatch = false
@@ -74,6 +76,75 @@ final class SessionManager: ObservableObject {
             data: ["display_name": .string(displayName)]
         )
         try? await supabase.auth.signOut()
+    }
+
+    func requestPasswordReset(email: String) async throws {
+        errorMessage = nil
+        try await supabase.auth.resetPasswordForEmail(
+            email,
+            redirectTo: URL(string: "fishedex://login-callback")
+        )
+    }
+
+    func updatePassword(_ newPassword: String) async throws {
+        errorMessage = nil
+        _ = try await supabase.auth.update(user: UserAttributes(password: newPassword))
+    }
+
+    func completePasswordRecovery() {
+        isPasswordRecoveryFlow = false
+        errorMessage = nil
+    }
+
+    func handleAuthDeepLink(_ url: URL) async {
+        let isRecoveryLink = url.absoluteString.contains("type=recovery")
+        do {
+            try await supabase.auth.session(from: url)
+            if isRecoveryLink {
+                isPasswordRecoveryFlow = true
+            } else {
+                await refreshUserData()
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func deleteAccount() async {
+        guard isAuthenticated else { return }
+
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
+
+        do {
+            let userID = try await supabase.auth.session.user.id
+            await deleteUserStorage(userId: userID)
+
+            try await supabase.rpc("delete_own_account").execute()
+
+            showProfile = false
+            isPasswordRecoveryFlow = false
+            try await supabase.auth.signOut()
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func deleteUserStorage(userId: UUID) async {
+        let avatarPath = UserStorage.profileAvatarPath(userId: userId, fileExtension: "jpg")
+        let catchPaths = catchPhotos.map(\.storagePath)
+
+        if !catchPaths.isEmpty {
+            try? await supabase.storage
+                .from(UserStorage.Bucket.catches)
+                .remove(paths: catchPaths)
+        }
+
+        try? await supabase.storage
+            .from(UserStorage.Bucket.avatars)
+            .remove(paths: [avatarPath])
     }
 
     func logCatch(_ input: LogCatchInput) async throws -> UUID {
@@ -809,8 +880,12 @@ final class SessionManager: ObservableObject {
                 if isAuthenticated {
                     await refreshUserData()
                 }
+            case .passwordRecovery:
+                isPasswordRecoveryFlow = true
+                isAuthenticated = session != nil
             case .signedOut:
                 isAuthenticated = false
+                isPasswordRecoveryFlow = false
                 profile = nil
                 fish = Fish.samples
                 catches = []

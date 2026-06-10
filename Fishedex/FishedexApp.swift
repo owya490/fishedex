@@ -10,14 +10,7 @@ struct FishedexApp: App {
                 .environmentObject(session)
                 .task { await session.bootstrap() }
                 .onOpenURL { url in
-                    Task {
-                        do {
-                            try await supabase.auth.session(from: url)
-                            await session.refreshUserData()
-                        } catch {
-                            session.errorMessage = error.localizedDescription
-                        }
-                    }
+                    Task { await session.handleAuthDeepLink(url) }
                 }
         }
     }

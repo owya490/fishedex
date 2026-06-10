@@ -44,6 +44,9 @@
 		II1111112C80000100B1A001 /* FriendProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = II2222222C80000100B1A001 /* FriendProfileView.swift */; };
 		II3333332C80000100B1A001 /* FriendsSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = II4444442C80000100B1A001 /* FriendsSectionView.swift */; };
 		KK1111112C80000100B1A001 /* FishIdentificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = KK2222222C80000100B1A001 /* FishIdentificationService.swift */; };
+		LL1111112C80000100B1A001 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = LL2222222C80000100B1A001 /* ForgotPasswordView.swift */; };
+		LL3333332C80000100B1A001 /* ResetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = LL4444442C80000100B1A001 /* ResetPasswordView.swift */; };
+		LL5555552C80000100B1A001 /* AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = LL6666662C80000100B1A001 /* AccountSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -85,6 +88,9 @@
 		GG6666662C80000100B1A001 /* AchievementEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementEvaluator.swift; sourceTree = "<group>"; };
 		GG8888882C80000100B1A001 /* FirstCatchAchievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstCatchAchievement.swift; sourceTree = "<group>"; };
 		KK2222222C80000100B1A001 /* FishIdentificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishIdentificationService.swift; sourceTree = "<group>"; };
+		LL2222222C80000100B1A001 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
+		LL4444442C80000100B1A001 /* ResetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetPasswordView.swift; sourceTree = "<group>"; };
+		LL6666662C80000100B1A001 /* AccountSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -153,6 +159,9 @@
 				GGAAAAAA2C80000100B1A001 /* Achievements */,
 				EE6666662C80000100B1A001 /* AnglerProfile.swift */,
 				EE8888882C80000100B1A001 /* AuthView.swift */,
+				LL2222222C80000100B1A001 /* ForgotPasswordView.swift */,
+				LL4444442C80000100B1A001 /* ResetPasswordView.swift */,
+				LL6666662C80000100B1A001 /* AccountSettingsView.swift */,
 				JJ2222222C80000100B1A001 /* VerifyEmailView.swift */,
 				FF2222222C80000100B1A001 /* LandingView.swift */,
 				EEAAAAAA2C80000100B1A001 /* ProfileView.swift */,
@@ -289,6 +298,9 @@
 				II1111112C80000100B1A001 /* FriendProfileView.swift in Sources */,
 				II3333332C80000100B1A001 /* FriendsSectionView.swift in Sources */,
 				KK1111112C80000100B1A001 /* FishIdentificationService.swift in Sources */,
+				LL1111112C80000100B1A001 /* ForgotPasswordView.swift in Sources */,
+				LL3333332C80000100B1A001 /* ResetPasswordView.swift in Sources */,
+				LL5555552C80000100B1A001 /* AccountSettingsView.swift in Sources */,
 				GG1111112C80000100B1A001 /* AchievementContext.swift in Sources */,
 				GG3333332C80000100B1A001 /* AchievementLogic.swift in Sources */,
 				GG5555552C80000100B1A001 /* AchievementEvaluator.swift in Sources */,
