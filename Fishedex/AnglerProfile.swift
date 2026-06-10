@@ -8,6 +8,7 @@ struct ProfileRow: Codable, Identifiable, Hashable {
     var statusTitle: String
     var rankLabel: String
     var currentBiome: String
+    var aiFishDetectionEnabled: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -17,7 +18,52 @@ struct ProfileRow: Codable, Identifiable, Hashable {
         case statusTitle = "status_title"
         case rankLabel = "rank_label"
         case currentBiome = "current_biome"
+        case aiFishDetectionEnabled = "ai_fish_detection_enabled"
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+        avatarUrl = try container.decodeIfPresent(String.self, forKey: .avatarUrl)
+        level = try container.decode(Int.self, forKey: .level)
+        statusTitle = try container.decode(String.self, forKey: .statusTitle)
+        rankLabel = try container.decode(String.self, forKey: .rankLabel)
+        currentBiome = try container.decode(String.self, forKey: .currentBiome)
+        aiFishDetectionEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .aiFishDetectionEnabled
+        ) ?? false
+    }
+}
+
+struct FishClassificationResult: Codable {
+    let matchedSpeciesName: String?
+    let confidence: Double
+    let reasoning: String
+    let alternatives: [FishClassificationAlternative]
+
+    enum CodingKeys: String, CodingKey {
+        case matchedSpeciesName = "matched_species_name"
+        case confidence
+        case reasoning
+        case alternatives
+    }
+}
+
+struct FishClassificationAlternative: Codable {
+    let speciesName: String
+    let confidence: Double
+
+    enum CodingKeys: String, CodingKey {
+        case speciesName = "species_name"
+        case confidence
+    }
+}
+
+struct FishDetectionResult: Codable {
+    let classification: FishClassificationResult
+    let species: FishSpeciesRow?
 }
 
 struct FishSpeciesRow: Codable, Identifiable {

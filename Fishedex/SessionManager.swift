@@ -1,6 +1,7 @@
 import Foundation
 import Supabase
 import Auth
+import UIKit
 
 @MainActor
 final class SessionManager: ObservableObject {
@@ -358,6 +359,16 @@ final class SessionManager: ObservableObject {
         return fish.first { $0.name.lowercased() == normalized }?.id
     }
 
+    var isAiFishDetectionEnabled: Bool {
+        profile?.aiFishDetectionEnabled ?? false
+    }
+
+    func classifyFish(image: UIImage) async throws -> FishDetectionResult {
+        guard isAuthenticated else { throw FishIdentificationError.notAuthenticated }
+        guard isAiFishDetectionEnabled else { throw FishIdentificationError.notEnabled }
+        return try await FishIdentificationService.classify(image: image)
+    }
+
     func uploadAvatar(imageData: Data, contentType: String = "image/jpeg") async {
         guard isAuthenticated else { return }
 
@@ -477,18 +488,13 @@ final class SessionManager: ObservableObject {
 
             rareSpeciesIDs = Set(species.filter(\.isRare).map(\.id))
             let caughtSpeciesIDs = Set(userCatches.compactMap(\.speciesId))
-            let catchBySpecies = Dictionary(
-                uniqueKeysWithValues: userCatches.compactMap { catchRow in
-                    catchRow.speciesId.map { ($0, catchRow) }
-                }
-            )
 
             fish = species.map { row in
-                let catchRow = catchBySpecies[row.id]
+                let speciesCatches = userCatches.filter { $0.speciesId == row.id }
                 return Fish.from(
                     species: row,
                     caught: caughtSpeciesIDs.contains(row.id),
-                    catchWeight: catchRow?.weightKg
+                    catchWeight: speciesCatches.count == 1 ? speciesCatches[0].weightKg : nil
                 )
             }
             catches = userCatches

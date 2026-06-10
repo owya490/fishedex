@@ -10,6 +10,8 @@ private enum CatchPhase {
 // MARK: - Catch Screen
 
 struct CatchView: View {
+    @EnvironmentObject private var session: SessionManager
+
     let onBack: () -> Void
     var onCatchLogged: () -> Void = {}
 
@@ -20,8 +22,10 @@ struct CatchView: View {
     @State private var scanProgress: CGFloat = 0
     @State private var caughtAt              = Date()
     @State private var scanTask: Task<Void, Never>?
+    @State private var detectionResult: FishDetectionResult?
 
-    private let scanDuration: TimeInterval = 5
+    private let minimumScanDuration: TimeInterval = 2
+    private let fallbackScanDuration: TimeInterval = 4
 
     var body: some View {
         ZStack {
@@ -50,6 +54,7 @@ struct CatchView: View {
                     initialLocationName: locationWeather.locationName,
                     initialCoordinate: locationWeather.userCoordinate,
                     caughtAt: caughtAt,
+                    detectionResult: detectionResult,
                     onFinished: {
                         resetCatchFlow()
                         onCatchLogged()
@@ -107,21 +112,51 @@ struct CatchView: View {
 
     private func startScanning() {
         scanProgress = 0
+        detectionResult = nil
         scanTask?.cancel()
-        scanTask = Task {
-            let steps = 50
-            let stepNanos = UInt64(scanDuration / Double(steps) * 1_000_000_000)
 
-            for step in 1...steps {
-                try? await Task.sleep(nanoseconds: stepNanos)
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    scanProgress = CGFloat(step) / CGFloat(steps)
+        let capturedImage = camera.capturedImage
+        let usesAI = session.isAiFishDetectionEnabled
+
+        scanTask = Task {
+            let startedAt = Date()
+            var aiResult: FishDetectionResult?
+
+            if usesAI, let capturedImage {
+                do {
+                    aiResult = try await session.classifyFish(image: capturedImage)
+                } catch {
+                    // Keep the catch flow moving even if classification fails.
+                    print("Fish classification failed:", error.localizedDescription)
+                }
+            }
+
+            let elapsed = Date().timeIntervalSince(startedAt)
+            let targetDuration = usesAI
+                ? max(minimumScanDuration, elapsed)
+                : fallbackScanDuration
+            let remaining = max(0, targetDuration - elapsed)
+
+            if remaining > 0 {
+                let steps = 20
+                let stepNanos = UInt64(remaining / Double(steps) * 1_000_000_000)
+
+                for step in 1...steps {
+                    try? await Task.sleep(nanoseconds: stepNanos)
+                    guard !Task.isCancelled else { return }
+                    await MainActor.run {
+                        let animationProgress = CGFloat(step) / CGFloat(steps)
+                        scanProgress = usesAI && aiResult != nil
+                            ? min(1, 0.7 + animationProgress * 0.3)
+                            : animationProgress
+                    }
                 }
             }
 
             guard !Task.isCancelled else { return }
             await MainActor.run {
+                detectionResult = aiResult
+                scanProgress = 1
                 camera.stopSession()
                 withAnimation { phase = .success }
             }
@@ -141,6 +176,7 @@ struct CatchView: View {
         scanTask?.cancel()
         scanTask = nil
         scanProgress = 0
+        detectionResult = nil
         showCapture = false
         phase = .camera
         camera.capturedImage = nil
@@ -346,7 +382,7 @@ private struct FishDetectedBanner: View {
             }
             .frame(height: 10)
 
-            Text(progress >= 1 ? "IDENTIFIED!" : "ANALYZING FISH...")
+            Text(progress >= 1 ? "IDENTIFIED!" : progress >= 0.7 ? "MATCHING SPECIES..." : "ANALYZING FISH...")
                 .font(FishedexFont.subheadline)
                 .foregroundStyle(FishedexTheme.muted)
                 .kerning(0.8)
@@ -393,4 +429,5 @@ private struct PixelFishingRodButton: View {
 
 #Preview {
     CatchView(onBack: {})
+        .environmentObject(SessionManager())
 }

@@ -43,6 +43,7 @@
 		GG7777772C80000100B1A001 /* FirstCatchAchievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = GG8888882C80000100B1A001 /* FirstCatchAchievement.swift */; };
 		II1111112C80000100B1A001 /* FriendProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = II2222222C80000100B1A001 /* FriendProfileView.swift */; };
 		II3333332C80000100B1A001 /* FriendsSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = II4444442C80000100B1A001 /* FriendsSectionView.swift */; };
+		KK1111112C80000100B1A001 /* FishIdentificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = KK2222222C80000100B1A001 /* FishIdentificationService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -83,6 +84,7 @@
 		GG4444442C80000100B1A001 /* AchievementLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementLogic.swift; sourceTree = "<group>"; };
 		GG6666662C80000100B1A001 /* AchievementEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementEvaluator.swift; sourceTree = "<group>"; };
 		GG8888882C80000100B1A001 /* FirstCatchAchievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstCatchAchievement.swift; sourceTree = "<group>"; };
+		KK2222222C80000100B1A001 /* FishIdentificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishIdentificationService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -147,6 +149,7 @@
 				HH8888882C80000100B1A001 /* ImageCache.swift */,
 				HH6666662C80000100B1A001 /* PhotoGalleryViews.swift */,
 				EE4444442C80000100B1A001 /* SessionManager.swift */,
+				KK2222222C80000100B1A001 /* FishIdentificationService.swift */,
 				GGAAAAAA2C80000100B1A001 /* Achievements */,
 				EE6666662C80000100B1A001 /* AnglerProfile.swift */,
 				EE8888882C80000100B1A001 /* AuthView.swift */,
@@ -285,6 +288,7 @@
 				EE9999992C80000100B1A001 /* ProfileView.swift in Sources */,
 				II1111112C80000100B1A001 /* FriendProfileView.swift in Sources */,
 				II3333332C80000100B1A001 /* FriendsSectionView.swift in Sources */,
+				KK1111112C80000100B1A001 /* FishIdentificationService.swift in Sources */,
 				GG1111112C80000100B1A001 /* AchievementContext.swift in Sources */,
 				GG3333332C80000100B1A001 /* AchievementLogic.swift in Sources */,
 				GG5555552C80000100B1A001 /* AchievementEvaluator.swift in Sources */,

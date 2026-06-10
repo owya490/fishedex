@@ -17,6 +17,7 @@ struct CatchSuccessView: View {
     let initialLocationName: String
     let initialCoordinate: CLLocationCoordinate2D?
     let caughtAt: Date
+    let detectionResult: FishDetectionResult?
     let onFinished: () -> Void
 
     @State private var step: CatchSuccessStep = .reveal
@@ -36,6 +37,7 @@ struct CatchSuccessView: View {
     @State private var saveError: String?
     @State private var isSavingCatch = false
     @State private var skipSpeciesSearchValidation = false
+    @State private var appliedAiSuggestion = false
 
     private var isSaving: Bool { isSavingCatch || session.isLoggingCatch }
 
@@ -44,12 +46,14 @@ struct CatchSuccessView: View {
         initialLocationName: String,
         initialCoordinate: CLLocationCoordinate2D?,
         caughtAt: Date,
+        detectionResult: FishDetectionResult? = nil,
         onFinished: @escaping () -> Void
     ) {
         self.capturedImage = capturedImage
         self.initialLocationName = initialLocationName
         self.initialCoordinate = initialCoordinate
         self.caughtAt = caughtAt
+        self.detectionResult = detectionResult
         self.onFinished = onFinished
         _locationName = State(initialValue: initialLocationName)
         _catchDate = State(initialValue: caughtAt)
@@ -95,6 +99,7 @@ struct CatchSuccessView: View {
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
                 trophyPulse = true
             }
+            applyAiSuggestionIfNeeded()
         }
     }
 
@@ -203,6 +208,10 @@ struct CatchSuccessView: View {
             Text("WHAT DID YOU CATCH?")
                 .font(FishedexFont.caption)
                 .foregroundStyle(FishedexTheme.muted)
+
+            if appliedAiSuggestion, let detectionResult {
+                aiSuggestionBanner(for: detectionResult)
+            }
 
             if showSpeciesResults {
                 speciesResultsList
@@ -485,6 +494,36 @@ struct CatchSuccessView: View {
     }
 
     // MARK: - Actions
+
+    private func aiSuggestionBanner(for result: FishDetectionResult) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("AI SUGGESTION")
+                .font(FishedexFont.micro)
+                .foregroundStyle(FishedexTheme.tabBlue)
+
+            Text(result.classification.reasoning)
+                .font(FishedexFont.caption)
+                .foregroundStyle(FishedexTheme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(FishedexTheme.tabBlue.opacity(0.08))
+        .fishedexSquare()
+        .fishedexBorder(lineWidth: 1, color: FishedexTheme.tabBlue.opacity(0.35))
+    }
+
+    private func applyAiSuggestionIfNeeded() {
+        guard let detectionResult,
+              FishIdentificationService.shouldSuggestSpecies(for: detectionResult),
+              let species = detectionResult.species,
+              let fish = session.fish.first(where: { $0.id == species.id }) else {
+            return
+        }
+
+        selectSpecies(fish)
+        appliedAiSuggestion = true
+    }
 
     private func selectSpecies(_ fish: Fish) {
         skipSpeciesSearchValidation = true
