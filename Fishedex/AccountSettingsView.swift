@@ -144,6 +144,7 @@ struct DeleteAccountView: View {
 
                         TextField("", text: $confirmationText)
                             .font(FishedexFont.body)
+                            .fishedexInputText()
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .padding(12)

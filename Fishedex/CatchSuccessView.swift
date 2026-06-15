@@ -18,6 +18,7 @@ struct CatchSuccessView: View {
     let initialCoordinate: CLLocationCoordinate2D?
     let caughtAt: Date
     let detectionResult: FishDetectionResult?
+    let measuredLengthCm: Double?
     let onFinished: () -> Void
 
     @State private var step: CatchSuccessStep = .reveal
@@ -47,6 +48,7 @@ struct CatchSuccessView: View {
         initialCoordinate: CLLocationCoordinate2D?,
         caughtAt: Date,
         detectionResult: FishDetectionResult? = nil,
+        measuredLengthCm: Double? = nil,
         onFinished: @escaping () -> Void
     ) {
         self.capturedImage = capturedImage
@@ -54,9 +56,13 @@ struct CatchSuccessView: View {
         self.initialCoordinate = initialCoordinate
         self.caughtAt = caughtAt
         self.detectionResult = detectionResult
+        self.measuredLengthCm = measuredLengthCm
         self.onFinished = onFinished
         _locationName = State(initialValue: initialLocationName)
         _catchDate = State(initialValue: caughtAt)
+        if let measuredLengthCm {
+            _lengthCm = State(initialValue: String(format: "%.1f", measuredLengthCm))
+        }
     }
 
     private var sortedSpecies: [Fish] {
@@ -223,6 +229,7 @@ struct CatchSuccessView: View {
 
                 TextField("Search fish type...", text: $speciesSearch)
                     .font(FishedexFont.headline)
+                    .fishedexInputText()
                     .textInputAutocapitalization(.words)
                     .disableAutocorrection(true)
                     .focused($speciesFieldFocused)
@@ -447,6 +454,7 @@ struct CatchSuccessView: View {
 
                 TextField("Weather, story...", text: $notes, axis: .vertical)
                     .font(FishedexFont.body)
+                    .fishedexInputText()
                     .lineLimit(3...6)
                     .padding(12)
                     .background(Color.white)
@@ -548,6 +556,7 @@ struct CatchSuccessView: View {
 
             TextField(prompt, text: text)
                 .font(FishedexFont.body)
+                .fishedexInputText()
                 .padding(12)
                 .background(Color.white)
                 .fishedexSquare()

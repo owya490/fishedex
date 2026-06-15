@@ -72,6 +72,7 @@ struct ForgotPasswordView: View {
 
             TextField("", text: text)
                 .font(FishedexFont.body)
+                .fishedexInputText()
                 .textContentType(contentType)
                 .padding(12)
                 .background(Color.white)

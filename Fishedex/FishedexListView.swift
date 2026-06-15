@@ -226,6 +226,7 @@ private struct DexSearchBar: View {
 
             TextField(placeholder, text: $text)
                 .font(FishedexFont.subheadline)
+                .fishedexInputText()
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
         }

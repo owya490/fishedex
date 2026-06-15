@@ -1,10 +1,20 @@
 import SwiftUI
 import AVFoundation
+import ARKit
 
 private enum CatchPhase {
+    case measuring
     case camera
     case scanning
     case success
+}
+
+private struct CatchSuccessPayload: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let caughtAt: Date
+    let detectionResult: FishDetectionResult?
+    let measuredLengthCm: Double?
 }
 
 // MARK: - Catch Screen
@@ -15,14 +25,19 @@ struct CatchView: View {
     let onBack: () -> Void
     var onCatchLogged: () -> Void = {}
 
-    @StateObject private var camera          = CameraManager()
-    @StateObject private var locationWeather = LocationWeatherManager()
-    @State private var phase: CatchPhase     = .camera
-    @State private var showCapture           = false
-    @State private var scanProgress: CGFloat = 0
-    @State private var caughtAt              = Date()
+    @StateObject private var camera           = CameraManager()
+    @StateObject private var locationWeather  = LocationWeatherManager()
+    @StateObject private var measureController = FishMeasureController()
+    @State private var phase: CatchPhase      = .measuring
+    @State private var showCapture            = false
+    @State private var scanProgress: CGFloat  = 0
+    @State private var caughtAt               = Date()
     @State private var scanTask: Task<Void, Never>?
     @State private var detectionResult: FishDetectionResult?
+    @State private var measuredLengthCm: Double?
+    @State private var showMeasureAR = true
+    @State private var scanImage: UIImage?
+    @State private var successPayload: CatchSuccessPayload?
 
     private let minimumScanDuration: TimeInterval = 2
     private let fallbackScanDuration: TimeInterval = 4
@@ -37,34 +52,48 @@ struct CatchView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            CameraHUD(
-                camera: camera,
-                locationWeather: locationWeather,
-                phase: phase,
-                showCapture: showCapture,
-                scanProgress: scanProgress,
-                onBack: handleBack,
-                onCapture: captureFish
-            )
-        }
-        .fullScreenCover(isPresented: successBinding) {
-            if let image = camera.capturedImage {
-                CatchSuccessView(
-                    capturedImage: image,
-                    initialLocationName: locationWeather.locationName,
-                    initialCoordinate: locationWeather.userCoordinate,
-                    caughtAt: caughtAt,
-                    detectionResult: detectionResult,
-                    onFinished: {
-                        resetCatchFlow()
-                        onCatchLogged()
-                    }
+            if phase == .measuring {
+                MeasureHUD(
+                    measureController: measureController,
+                    locationWeather: locationWeather,
+                    onBack: onBack,
+                    onSkip: advanceToCamera,
+                    onContinue: advanceToCamera
+                )
+            } else {
+                CameraHUD(
+                    camera: camera,
+                    locationWeather: locationWeather,
+                    phase: phase,
+                    showCapture: showCapture,
+                    scanProgress: scanProgress,
+                    onBack: handleBack,
+                    onCapture: captureFish
                 )
             }
         }
+        .fullScreenCover(item: $successPayload, onDismiss: resetCatchFlow) { payload in
+            CatchSuccessView(
+                capturedImage: payload.image,
+                initialLocationName: locationWeather.locationName,
+                initialCoordinate: locationWeather.userCoordinate,
+                caughtAt: payload.caughtAt,
+                detectionResult: payload.detectionResult,
+                measuredLengthCm: payload.measuredLengthCm,
+                onFinished: {
+                    successPayload = nil
+                    resetCatchFlow()
+                    onCatchLogged()
+                }
+            )
+            .environmentObject(session)
+        }
         .onAppear {
-            camera.requestAndSetup()
             locationWeather.start()
+            camera.preparePermission()
+            if phase == .camera {
+                camera.requestAndSetup()
+            }
         }
         .onDisappear {
             scanTask?.cancel()
@@ -73,20 +102,17 @@ struct CatchView: View {
         }
     }
 
-    private var successBinding: Binding<Bool> {
-        Binding(
-            get: { phase == .success },
-            set: { isPresented in
-                if !isPresented, phase == .success {
-                    resetCatchFlow()
-                }
-            }
-        )
-    }
-
     @ViewBuilder
     private var captureLayer: some View {
-        if phase == .scanning || phase == .success, let image = camera.capturedImage {
+        if phase == .measuring && showMeasureAR {
+            if ARWorldTrackingConfiguration.isSupported {
+                FishMeasureARView(controller: measureController)
+            } else {
+                FishMeasureUnavailableView()
+            }
+        } else if phase == .measuring {
+            Color.black
+        } else if phase == .scanning || phase == .success, let image = scanImage ?? camera.capturedImage {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
@@ -97,34 +123,45 @@ struct CatchView: View {
         }
     }
 
+    private func advanceToCamera() {
+        measuredLengthCm = measureController.lengthCm
+        measureController.stopSession()
+        showMeasureAR = false
+        phase = .camera
+        camera.requestAndSetup(releaseDelay: 0.05)
+    }
+
     private func captureFish() {
         guard phase == .camera else { return }
 
-        camera.capturePhoto()
-        caughtAt = Date()
-        withAnimation(.spring(response: 0.4)) { showCapture = true }
+        camera.capturePhoto { image in
+            guard let image else { return }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            withAnimation { phase = .scanning }
-            startScanning()
+            scanImage = image
+            caughtAt = Date()
+            withAnimation(.spring(response: 0.4)) { showCapture = true }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                withAnimation { phase = .scanning }
+                startScanning(image: image)
+            }
         }
     }
 
-    private func startScanning() {
+    private func startScanning(image: UIImage) {
         scanProgress = 0
         detectionResult = nil
         scanTask?.cancel()
 
-        let capturedImage = camera.capturedImage
         let usesAI = session.isAiFishDetectionEnabled
 
         scanTask = Task {
             let startedAt = Date()
             var aiResult: FishDetectionResult?
 
-            if usesAI, let capturedImage {
+            if usesAI {
                 do {
-                    aiResult = try await session.classifyFish(image: capturedImage)
+                    aiResult = try await session.classifyFish(image: image)
                 } catch {
                     // Keep the catch flow moving even if classification fails.
                     print("Fish classification failed:", error.localizedDescription)
@@ -158,6 +195,12 @@ struct CatchView: View {
                 detectionResult = aiResult
                 scanProgress = 1
                 camera.stopSession()
+                successPayload = CatchSuccessPayload(
+                    image: image,
+                    caughtAt: caughtAt,
+                    detectionResult: aiResult,
+                    measuredLengthCm: measuredLengthCm
+                )
                 withAnimation { phase = .success }
             }
         }
@@ -166,7 +209,14 @@ struct CatchView: View {
     private func handleBack() {
         guard phase != .scanning else { return }
         if phase == .success {
+            successPayload = nil
             resetCatchFlow()
+        } else if phase == .camera {
+            camera.stopSession()
+            camera.capturedImage = nil
+            scanImage = nil
+            showMeasureAR = true
+            phase = .measuring
         } else {
             onBack()
         }
@@ -177,10 +227,15 @@ struct CatchView: View {
         scanTask = nil
         scanProgress = 0
         detectionResult = nil
+        measuredLengthCm = nil
+        measureController.requestReset()
         showCapture = false
-        phase = .camera
+        showMeasureAR = true
+        phase = .measuring
+        successPayload = nil
+        scanImage = nil
         camera.capturedImage = nil
-        camera.startSession()
+        camera.stopSession()
     }
 }
 
@@ -202,6 +257,116 @@ private struct PermissionDeniedBackground: View {
                     .font(FishedexFont.body)
                     .foregroundStyle(.white.opacity(0.35))
             }
+        }
+    }
+}
+
+// MARK: - Measure HUD
+
+private struct MeasureHUD: View {
+    @ObservedObject var measureController: FishMeasureController
+    @ObservedObject var locationWeather: LocationWeatherManager
+    let onBack: () -> Void
+    let onSkip: () -> Void
+    let onContinue: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 10) {
+                FishedexBackButton(action: onBack, style: .overlay)
+                Spacer()
+                ContextChip(manager: locationWeather)
+                Spacer()
+                Color.clear.frame(width: 32, height: 32)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+
+            Spacer()
+
+            MeasureReticle(surfaceReady: measureController.surfaceDetected)
+                .frame(width: 230, height: 185)
+
+            if let lengthCm = measureController.lengthCm {
+                Text(String(format: "%.1f cm", lengthCm))
+                    .font(FishedexFont.pokemon(28))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(.black.opacity(0.65))
+                    .fishedexSquare()
+                    .fishedexBorder()
+                    .padding(.top, 16)
+            }
+
+            Spacer()
+
+            VStack(spacing: 12) {
+                Text(measureController.instructionText.uppercased())
+                    .font(FishedexFont.subheadline)
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
+                    .padding(.horizontal, 24)
+
+                HStack(spacing: 12) {
+                    if measureController.pointCount > 0 {
+                        Button(action: measureController.requestReset) {
+                            Text("RESET")
+                                .font(FishedexFont.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(.black.opacity(0.55))
+                                .fishedexSquare()
+                                .fishedexBorder()
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Button(action: measureController.isMeasurementComplete ? onContinue : onSkip) {
+                        Text(measureController.isMeasurementComplete ? "TAKE PHOTO" : "SKIP")
+                            .font(FishedexFont.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(measureController.isMeasurementComplete ? FishedexTheme.tabGreen : FishedexTheme.tabBlue)
+                            .fishedexSquare()
+                            .fishedexBorder()
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
+        }
+    }
+}
+
+private struct MeasureReticle: View {
+    let surfaceReady: Bool
+    private let cornerLength: CGFloat = 28
+    private let lineWidth: CGFloat = 3
+
+    var body: some View {
+        ZStack {
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                let color = surfaceReady ? Color.yellow : Color.white.opacity(0.7)
+
+                Path { p in
+                    p.move(to: .init(x: 0, y: cornerLength)); p.addLine(to: .init(x: 0, y: 0)); p.addLine(to: .init(x: cornerLength, y: 0))
+                    p.move(to: .init(x: w - cornerLength, y: 0)); p.addLine(to: .init(x: w, y: 0)); p.addLine(to: .init(x: w, y: cornerLength))
+                    p.move(to: .init(x: 0, y: h - cornerLength)); p.addLine(to: .init(x: 0, y: h)); p.addLine(to: .init(x: cornerLength, y: h))
+                    p.move(to: .init(x: w - cornerLength, y: h)); p.addLine(to: .init(x: w, y: h)); p.addLine(to: .init(x: w, y: h - cornerLength))
+                }
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .square))
+            }
+
+            Image(systemName: "ruler")
+                .font(.system(size: 36, weight: .light))
+                .foregroundStyle(.white.opacity(0.85))
         }
     }
 }

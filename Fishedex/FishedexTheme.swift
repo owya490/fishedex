@@ -146,6 +146,10 @@ extension View {
             .fishedexSquare()
             .fishedexBorder()
     }
+
+    func fishedexInputText() -> some View {
+        foregroundStyle(FishedexTheme.ink)
+    }
 }
 
 // MARK: - Pixel circle

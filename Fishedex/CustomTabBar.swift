@@ -34,15 +34,18 @@ struct CustomTabBar: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background {
-            VStack(spacing: 0) {
+        .background { TabBarBackground().ignoresSafeArea(edges: .bottom) }
+    }
+}
+
+private struct TabBarBackground: View {
+    var body: some View {
+        Color(red: 0.90, green: 0.90, blue: 0.91)
+            .overlay(alignment: .top) {
                 Rectangle()
                     .fill(Color.black.opacity(0.08))
                     .frame(height: 1)
-                Color(red: 0.90, green: 0.90, blue: 0.91)
             }
-            .ignoresSafeArea(edges: .bottom)
-        }
     }
 }
 
@@ -188,11 +191,15 @@ private struct TabBarButton: View {
         isActive ? 2 : 3
     }
 
+    private let buttonHeight: CGFloat = 58
+
     var body: some View {
         Button(action: action) {
             ZStack(alignment: .topLeading) {
                 Rectangle()
                     .fill(Color.black.opacity(isActive ? 0.22 : 0.14))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: buttonHeight)
                     .offset(x: shadowOffset, y: shadowOffset)
 
                 VStack(spacing: 6) {
@@ -220,7 +227,7 @@ private struct TabBarButton: View {
                         .kerning(0.4)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 58)
+                .frame(height: buttonHeight)
                 .background { buttonFace }
                 .fishedexSquare()
                 .fishedexPixelBorder(
@@ -228,6 +235,8 @@ private struct TabBarButton: View {
                 )
                 .offset(x: isActive ? -1 : 0, y: isActive ? -1 : 0)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: buttonHeight)
         }
         .buttonStyle(TabBarPressStyle())
         .animation(.easeOut(duration: 0.12), value: isActive)

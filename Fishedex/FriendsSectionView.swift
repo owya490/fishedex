@@ -20,6 +20,7 @@ struct FriendsSectionView: View {
             HStack(spacing: 8) {
                 TextField("Friend's email", text: $emailQuery)
                     .font(FishedexFont.body)
+                    .fishedexInputText()
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.emailAddress)

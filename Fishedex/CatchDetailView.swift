@@ -227,6 +227,7 @@ struct CatchDetailView: View {
 
                 TextField("Weather, story...", text: $notes, axis: .vertical)
                     .font(FishedexFont.body)
+                    .fishedexInputText()
                     .lineLimit(3...6)
                     .padding(12)
                     .background(Color(red: 0.95, green: 0.95, blue: 0.96))
@@ -279,6 +280,7 @@ struct CatchDetailView: View {
 
             TextField(prompt, text: text)
                 .font(FishedexFont.body)
+                .fishedexInputText()
                 .padding(12)
                 .background(Color(red: 0.95, green: 0.95, blue: 0.96))
                 .fishedexSquare()

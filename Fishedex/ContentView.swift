@@ -100,6 +100,7 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: session.showProfile)
         .animation(.easeInOut(duration: 0.25), value: session.isPasswordRecoveryFlow)
+        .animation(.easeOut(duration: 0.22), value: selectedTab)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if selectedTab != .catch_ && !session.showProfile && !session.isPasswordRecoveryFlow && !hidesBottomTabBar {
                 CustomTabBar(selectedTab: $selectedTab)
@@ -121,6 +122,7 @@ struct ContentView: View {
                 onBack: { selectedTab = .map },
                 onCatchLogged: { selectedTab = .dex }
             )
+            .transition(.opacity)
         case .dex:
             DexView(
                 fish: session.fish,

@@ -21,28 +21,45 @@ final class CameraManager: NSObject, ObservableObject {
     private let photoOutput = AVCapturePhotoOutput()
     private let sessionQueue = DispatchQueue(label: "camera.session", qos: .userInitiated)
     private var isConfigured = false
+    private var captureCompletion: ((UIImage?) -> Void)?
 
     // MARK: Setup
 
-    func requestAndSetup() {
+    /// Resolve camera permission early so AR → photo transitions don't stall on a permission prompt.
+    func preparePermission() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             DispatchQueue.main.async { self.permission = .granted }
-            configureSessionIfNeeded()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async {
                     self.permission = granted ? .granted : .denied
                 }
-                if granted { self.configureSessionIfNeeded() }
             }
         default:
             DispatchQueue.main.async { self.permission = .denied }
         }
     }
 
-    private func configureSessionIfNeeded() {
-        sessionQueue.async {
+    func requestAndSetup(releaseDelay: TimeInterval = 0) {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            DispatchQueue.main.async { self.permission = .granted }
+            configureSessionIfNeeded(releaseDelay: releaseDelay)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    self.permission = granted ? .granted : .denied
+                }
+                if granted { self.configureSessionIfNeeded(releaseDelay: releaseDelay) }
+            }
+        default:
+            DispatchQueue.main.async { self.permission = .denied }
+        }
+    }
+
+    private func configureSessionIfNeeded(releaseDelay: TimeInterval = 0) {
+        sessionQueue.asyncAfter(deadline: .now() + releaseDelay) {
             if self.isConfigured {
                 self.startRunningIfNeeded()
                 return
@@ -91,9 +108,10 @@ final class CameraManager: NSObject, ObservableObject {
 
     // MARK: Capture
 
-    func capturePhoto() {
+    func capturePhoto(completion: ((UIImage?) -> Void)? = nil) {
         guard !isCapturing else { return }
         isCapturing = true
+        captureCompletion = completion
 
         // Flash white overlay
         withAnimation(.easeIn(duration: 0.05)) { flashOpacity = 1 }
@@ -112,10 +130,23 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
-        defer { DispatchQueue.main.async { self.isCapturing = false } }
+        let completion = captureCompletion
+        captureCompletion = nil
+
+        defer {
+            DispatchQueue.main.async { self.isCapturing = false }
+        }
+
         guard error == nil, let data = photo.fileDataRepresentation(),
-              let image = UIImage(data: data) else { return }
-        DispatchQueue.main.async { self.capturedImage = image }
+              let image = UIImage(data: data) else {
+            DispatchQueue.main.async { completion?(nil) }
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.capturedImage = image
+            completion?(image)
+        }
     }
 }
 
