@@ -27,6 +27,7 @@
 		QQ1111112C80000100B1A001 /* SolunarCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = QQ4444442C80000100B1A001 /* SolunarCalculator.swift */; };
 		QQ2222222C80000100B1A001 /* SolunarDayCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = QQ5555552C80000100B1A001 /* SolunarDayCache.swift */; };
 		QQ3333332C80000100B1A001 /* FishingTimesDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = QQ6666662C80000100B1A001 /* FishingTimesDetailSheet.swift */; };
+		QQ7777772C80000100B1A001 /* TideGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = QQ8888882C80000100B1A001 /* TideGraphView.swift */; };
 		OO1111112C80000100B1A001 /* FishingSpotSceneArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = OO2222222C80000100B1A001 /* FishingSpotSceneArt.swift */; };
 		PP1111112C80000100B1A001 /* FishCatalogSpecies.swift in Sources */ = {isa = PBXBuildFile; fileRef = PP2222222C80000100B1A001 /* FishCatalogSpecies.swift */; };
 		BB7777772C80000100B1A001 /* FishedexBackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8888882C80000100B1A001 /* FishedexBackButton.swift */; };
@@ -80,6 +81,7 @@
 		QQ4444442C80000100B1A001 /* SolunarCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolunarCalculator.swift; sourceTree = "<group>"; };
 		QQ5555552C80000100B1A001 /* SolunarDayCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolunarDayCache.swift; sourceTree = "<group>"; };
 		QQ6666662C80000100B1A001 /* FishingTimesDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingTimesDetailSheet.swift; sourceTree = "<group>"; };
+		QQ8888882C80000100B1A001 /* TideGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TideGraphView.swift; sourceTree = "<group>"; };
 		OO2222222C80000100B1A001 /* FishingSpotSceneArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpotSceneArt.swift; sourceTree = "<group>"; };
 		PP2222222C80000100B1A001 /* FishCatalogSpecies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishCatalogSpecies.swift; sourceTree = "<group>"; };
 		BB8888882C80000100B1A001 /* FishedexBackButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishedexBackButton.swift; sourceTree = "<group>"; };
@@ -195,6 +197,7 @@
 				QQ4444442C80000100B1A001 /* SolunarCalculator.swift */,
 				QQ5555552C80000100B1A001 /* SolunarDayCache.swift */,
 				QQ6666662C80000100B1A001 /* FishingTimesDetailSheet.swift */,
+				QQ8888882C80000100B1A001 /* TideGraphView.swift */,
 				OO2222222C80000100B1A001 /* FishingSpotSceneArt.swift */,
 				PP2222222C80000100B1A001 /* FishCatalogSpecies.swift */,
 				0F1A4C9C2C80000100B1A001 /* FishArtworkView.swift */,
@@ -311,6 +314,7 @@
 				QQ1111112C80000100B1A001 /* SolunarCalculator.swift in Sources */,
 				QQ2222222C80000100B1A001 /* SolunarDayCache.swift in Sources */,
 				QQ3333332C80000100B1A001 /* FishingTimesDetailSheet.swift in Sources */,
+				QQ7777772C80000100B1A001 /* TideGraphView.swift in Sources */,
 				OO1111112C80000100B1A001 /* FishingSpotSceneArt.swift in Sources */,
 				PP1111112C80000100B1A001 /* FishCatalogSpecies.swift in Sources */,
 				CC1111112C80000100B1A001 /* CameraManager.swift in Sources */,

@@ -68,6 +68,13 @@ struct TideExtreme: Identifiable, Codable, Hashable {
     let isHigh: Bool
 }
 
+struct TideSample: Identifiable, Codable, Hashable {
+    let time: Date
+    let heightMeters: Double
+
+    var id: TimeInterval { time.timeIntervalSince1970 }
+}
+
 enum SolunarPeriodKind: String, Codable, Hashable {
     case major
     case minor
@@ -610,6 +617,87 @@ enum SolunarCalculator {
     }
 
     private static func sinDegrees(_ d: Double) -> Double { sin(d * .pi / 180) }
+}
+
+// MARK: - Tide curve
+
+enum TideCurveBuilder {
+    static func samplesForToday(
+        from times: [Date],
+        heights: [Double],
+        calendar: Calendar = .current
+    ) -> [TideSample] {
+        guard times.count == heights.count else { return [] }
+        return zip(times, heights)
+            .compactMap { time, height in
+                calendar.isDateInToday(time) ? TideSample(time: time, heightMeters: height) : nil
+            }
+            .sorted { $0.time < $1.time }
+    }
+
+    /// Builds a smooth 24-hour curve from high/low extrema when hourly data is unavailable.
+    static func synthesizeFromExtrema(
+        _ extrema: [TideExtreme],
+        calendar: Calendar = .current,
+        stepMinutes: Int = 15
+    ) -> [TideSample] {
+        let sorted = extrema.sorted { $0.time < $1.time }
+        guard sorted.count >= 2 else { return [] }
+
+        let dayStart = calendar.startOfDay(for: Date())
+        let dayEnd = dayStart.addingTimeInterval(24 * 3600)
+        let anchors = sorted.map { ($0.time, $0.heightMeters) }
+
+        var samples: [TideSample] = []
+        let step = TimeInterval(stepMinutes * 60)
+        var t = dayStart.timeIntervalSince1970
+        while t < dayEnd.timeIntervalSince1970 {
+            let time = Date(timeIntervalSince1970: t)
+            let height = interpolateHeight(at: time, anchors: anchors)
+            samples.append(TideSample(time: time, heightMeters: height))
+            t += step
+        }
+        return samples
+    }
+
+    private static func interpolateHeight(at time: Date, anchors: [(Date, Double)]) -> Double {
+        let t = time.timeIntervalSince1970
+
+        if t <= anchors[0].0.timeIntervalSince1970 {
+            let (t0, h0) = anchors[0]
+            let (t1, h1) = anchors[1]
+            let span = max(t1.timeIntervalSince(t0), 1)
+            let phase = (t - t0.timeIntervalSince1970) / span
+            return cosineBlend(from: h0, to: h1, phase: phase)
+        }
+
+        if t >= anchors[anchors.count - 1].0.timeIntervalSince1970 {
+            let (t0, h0) = anchors[anchors.count - 2]
+            let (t1, h1) = anchors[anchors.count - 1]
+            let span = max(t1.timeIntervalSince(t0), 1)
+            let phase = (t - t0.timeIntervalSince1970) / span
+            return cosineBlend(from: h0, to: h1, phase: phase)
+        }
+
+        for index in 0..<(anchors.count - 1) {
+            let (startTime, startHeight) = anchors[index]
+            let (endTime, endHeight) = anchors[index + 1]
+            let start = startTime.timeIntervalSince1970
+            let end = endTime.timeIntervalSince1970
+            guard t >= start, t <= end else { continue }
+            let span = max(end - start, 1)
+            let phase = (t - start) / span
+            return cosineBlend(from: startHeight, to: endHeight, phase: phase)
+        }
+
+        return anchors[0].1
+    }
+
+    private static func cosineBlend(from start: Double, to end: Double, phase: Double) -> Double {
+        let clamped = max(0, min(1, phase))
+        let eased = 0.5 - cos(clamped * .pi) / 2
+        return start + (end - start) * eased
+    }
 }
 
 // MARK: - Tide parsing

@@ -26,11 +26,26 @@ struct CachedSolunarDay: Codable {
     let key: SolunarCacheKey
     let forecast: SolunarDayForecast
     let tideExtrema: [TideExtreme]
+    let tideSamples: [TideSample]
     let cachedAt: Date
+
+    init(
+        key: SolunarCacheKey,
+        forecast: SolunarDayForecast,
+        tideExtrema: [TideExtreme],
+        tideSamples: [TideSample] = [],
+        cachedAt: Date
+    ) {
+        self.key = key
+        self.forecast = forecast
+        self.tideExtrema = tideExtrema
+        self.tideSamples = tideSamples
+        self.cachedAt = cachedAt
+    }
 }
 
 enum SolunarDayCache {
-    private static let storageKey = "fishedex.solunarDayCache.v2"
+    private static let storageKey = "fishedex.solunarDayCache.v4"
 
     static func load(key: SolunarCacheKey) -> CachedSolunarDay? {
         guard let all = loadAll() else { return nil }

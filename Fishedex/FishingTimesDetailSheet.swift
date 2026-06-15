@@ -149,13 +149,27 @@ struct FishingTimesDetailSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             sectionTitle("TIDES")
 
-            if location.tideExtrema.isEmpty {
-                Text(location.solunarLoading ? "Loading tide data..." : "No tide data for today.")
+            if location.tideSamples.count >= 2 {
+                TideGraphView(
+                    locationName: location.locationName,
+                    samples: location.tideSamples,
+                    extrema: displayedTides
+                )
+            } else if location.solunarLoading {
+                Text("Loading tide data...")
                     .font(FishedexFont.caption)
                     .foregroundStyle(FishedexTheme.muted)
+            }
+
+            if location.tideExtrema.isEmpty {
+                if !location.solunarLoading {
+                    Text("No tide data for today.")
+                        .font(FishedexFont.caption)
+                        .foregroundStyle(FishedexTheme.muted)
+                }
             } else {
                 VStack(spacing: 8) {
-                    ForEach(upcomingTides) { tide in
+                    ForEach(displayedTides) { tide in
                         HStack {
                             Image(systemName: tide.isHigh ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
                                 .foregroundStyle(FishedexTheme.ocean)
@@ -165,7 +179,7 @@ struct FishingTimesDetailSheet: View {
                                 .frame(width: 44, alignment: .leading)
                             Text(SolunarCalculator.formatTime(tide.time))
                                 .font(FishedexFont.caption)
-                                .foregroundStyle(FishedexTheme.muted)
+                                .foregroundStyle(tide.time < Date() ? FishedexTheme.muted : FishedexTheme.ink)
                             Spacer()
                             Text(String(format: "%.1f M", tide.heightMeters))
                                 .font(FishedexFont.caption)
@@ -176,6 +190,7 @@ struct FishingTimesDetailSheet: View {
                         .background(Color.white)
                         .fishedexSquare()
                         .fishedexBorder(lineWidth: 1)
+                        .opacity(tide.time < Date().addingTimeInterval(-30 * 60) ? 0.55 : 1)
                     }
                 }
             }
@@ -236,13 +251,8 @@ struct FishingTimesDetailSheet: View {
 
     // MARK: - Helpers
 
-    private var upcomingTides: [TideExtreme] {
-        let now = Date()
-        return location.tideExtrema
-            .filter { $0.time >= now.addingTimeInterval(-30 * 60) }
-            .sorted { $0.time < $1.time }
-            .prefix(4)
-            .map { $0 }
+    private var displayedTides: [TideExtreme] {
+        location.tideExtrema.sorted { $0.time < $1.time }
     }
 
     private func periodSection(title: String, subtitle: String, periods: [SolunarPeriod], tint: Color) -> some View {

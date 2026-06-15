@@ -30,6 +30,7 @@ final class LocationWeatherManager: NSObject, ObservableObject {
 
     @Published var solunarForecast: SolunarDayForecast?
     @Published var tideExtrema: [TideExtreme] = []
+    @Published var tideSamples: [TideSample] = []
     @Published var solunarLoading = false
 
     private let locationManager = CLLocationManager()
@@ -172,6 +173,14 @@ final class LocationWeatherManager: NSObject, ObservableObject {
 
         if let cached = SolunarDayCache.load(key: key) {
             applySolunar(cached)
+            if cached.tideExtrema.isEmpty || cached.tideSamples.isEmpty {
+                fetchTidesOnly(
+                    lat: location.coordinate.latitude,
+                    lon: location.coordinate.longitude,
+                    cacheKey: key,
+                    forecast: cached.forecast
+                )
+            }
             return
         }
 
@@ -184,6 +193,9 @@ final class LocationWeatherManager: NSObject, ObservableObject {
     private func applySolunar(_ cached: CachedSolunarDay) {
         solunarForecast = cached.forecast
         tideExtrema = cached.tideExtrema
+        tideSamples = cached.tideSamples.isEmpty
+            ? TideCurveBuilder.synthesizeFromExtrema(cached.tideExtrema)
+            : cached.tideSamples
         solunarLoading = false
 
         let moon = cached.forecast.moonPhase
@@ -196,6 +208,7 @@ final class LocationWeatherManager: NSObject, ObservableObject {
         var sunrise: Date?
         var sunset: Date?
         var tides: [TideExtreme] = []
+        var samples: [TideSample] = []
 
         group.enter()
         fetchSunTimes(lat: lat, lon: lon) { sun, set in
@@ -205,8 +218,9 @@ final class LocationWeatherManager: NSObject, ObservableObject {
         }
 
         group.enter()
-        fetchMarineTides(lat: lat, lon: lon) { extrema in
+        fetchTides(lat: lat, lon: lon) { extrema, hourlySamples in
             tides = extrema
+            samples = hourlySamples
             group.leave()
         }
 
@@ -227,6 +241,9 @@ final class LocationWeatherManager: NSObject, ObservableObject {
             }
 
             let todayTides = Self.tidesForToday(tides)
+            let todaySamples = samples.isEmpty
+                ? TideCurveBuilder.synthesizeFromExtrema(tides)
+                : samples
             let forecast = SolunarCalculator.forecast(
                 latitude: lat,
                 longitude: lon,
@@ -239,6 +256,7 @@ final class LocationWeatherManager: NSObject, ObservableObject {
                 key: cacheKey,
                 forecast: forecast,
                 tideExtrema: todayTides,
+                tideSamples: todaySamples,
                 cachedAt: Date()
             )
             SolunarDayCache.save(entry)
@@ -278,12 +296,80 @@ final class LocationWeatherManager: NSObject, ObservableObject {
         }.resume()
     }
 
-    private func fetchMarineTides(lat: Double, lon: Double, completion: @escaping ([TideExtreme]) -> Void) {
+    private func fetchTides(lat: Double, lon: Double, completion: @escaping ([TideExtreme], [TideSample]) -> Void) {
+        fetchMarineTides(lat: lat, lon: lon) { marineExtrema, marineSamples in
+            if !marineExtrema.isEmpty {
+                completion(marineExtrema, marineSamples)
+                return
+            }
+            self.fetchTideTurtleTides(lat: lat, lon: lon) { extrema in
+                let samples = TideCurveBuilder.synthesizeFromExtrema(extrema)
+                completion(extrema, samples)
+            }
+        }
+    }
+
+    private func fetchTidesOnly(lat: Double, lon: Double, cacheKey: SolunarCacheKey, forecast: SolunarDayForecast) {
+        fetchTides(lat: lat, lon: lon) { [weak self] extrema, samples in
+            guard let self else { return }
+            let todayTides = Self.tidesForToday(extrema)
+            guard !todayTides.isEmpty else { return }
+
+            let todaySamples = samples.isEmpty
+                ? TideCurveBuilder.synthesizeFromExtrema(extrema)
+                : samples
+
+            let updatedForecast = SolunarCalculator.forecast(
+                latitude: lat,
+                longitude: lon,
+                sunrise: forecast.sunrise,
+                sunset: forecast.sunset,
+                tideExtrema: todayTides
+            )
+            let entry = CachedSolunarDay(
+                key: cacheKey,
+                forecast: updatedForecast,
+                tideExtrema: todayTides,
+                tideSamples: todaySamples,
+                cachedAt: Date()
+            )
+            SolunarDayCache.save(entry)
+            self.applySolunar(entry)
+        }
+    }
+
+    private func fetchMarineTides(
+        lat: Double,
+        lon: Double,
+        completion: @escaping ([TideExtreme], [TideSample]) -> Void
+    ) {
         let urlStr = "https://marine-api.open-meteo.com/v1/marine"
             + "?latitude=\(lat)&longitude=\(lon)"
             + "&hourly=sea_level_height_msl"
             + "&timezone=auto"
             + "&forecast_days=2"
+        guard let url = URL(string: urlStr) else {
+            completion([], [])
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let series = Self.parseMarineHourlySeries(from: json)
+            else {
+                DispatchQueue.main.async { completion([], []) }
+                return
+            }
+
+            let extrema = TideParser.extrema(from: series.times, heights: series.heights)
+            let samples = TideCurveBuilder.samplesForToday(from: series.times, heights: series.heights)
+            DispatchQueue.main.async { completion(extrema, samples) }
+        }.resume()
+    }
+
+    private func fetchTideTurtleTides(lat: Double, lon: Double, completion: @escaping ([TideExtreme]) -> Void) {
+        let urlStr = "https://tideturtle.com/api/v1/tides?lat=\(lat)&lon=\(lon)"
         guard let url = URL(string: urlStr) else {
             completion([])
             return
@@ -292,27 +378,71 @@ final class LocationWeatherManager: NSObject, ObservableObject {
         URLSession.shared.dataTask(with: url) { data, _, _ in
             guard let data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let hourly = json["hourly"] as? [String: Any],
-                  let times = hourly["time"] as? [String],
-                  let heights = hourly["sea_level_height_msl"] as? [Double]
+                  let tides = json["tides"] as? [String: Any],
+                  let dataObj = tides["data"] as? [String: Any],
+                  let extrema = dataObj["extrema"] as? [[String: Any]]
             else {
                 DispatchQueue.main.async { completion([]) }
                 return
             }
 
-            let tzId = json["timezone"] as? String
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-            var parsedTimes: [Date] = []
-            var parsedHeights: [Double] = []
-            for (time, height) in zip(times, heights) {
-                guard let date = Self.parseOpenMeteoDate(time, timeZoneId: tzId) else { continue }
-                parsedTimes.append(date)
-                parsedHeights.append(height)
+            var parsed: [TideExtreme] = []
+            for item in extrema {
+                guard let timeStr = item["time"] as? String,
+                      let height = item["height"] as? Double,
+                      let isHigh = item["isHigh"] as? Bool
+                else { continue }
+
+                var date = iso.date(from: timeStr)
+                if date == nil {
+                    iso.formatOptions = [.withInternetDateTime]
+                    date = iso.date(from: timeStr)
+                }
+                guard let date else { continue }
+
+                parsed.append(TideExtreme(
+                    id: "\(isHigh ? "high" : "low")-\(Int(date.timeIntervalSince1970))",
+                    time: date,
+                    heightMeters: height,
+                    isHigh: isHigh
+                ))
             }
 
-            let extrema = TideParser.extrema(from: parsedTimes, heights: parsedHeights)
-            DispatchQueue.main.async { completion(extrema) }
+            DispatchQueue.main.async { completion(parsed) }
         }.resume()
+    }
+
+    private static func parseMarineHourlySeries(from json: [String: Any]) -> (times: [Date], heights: [Double])? {
+        guard let hourly = json["hourly"] as? [String: Any],
+              let timeStrings = hourly["time"] as? [String],
+              let rawHeights = hourly["sea_level_height_msl"] as? [Any],
+              !timeStrings.isEmpty
+        else { return nil }
+
+        let tzId = json["timezone"] as? String
+        var times: [Date] = []
+        var heights: [Double] = []
+
+        for (timeString, raw) in zip(timeStrings, rawHeights) {
+            guard let height = numericValue(raw),
+                  let date = parseOpenMeteoDate(timeString, timeZoneId: tzId)
+            else { continue }
+            times.append(date)
+            heights.append(height)
+        }
+
+        guard times.count >= 3 else { return nil }
+        return (times, heights)
+    }
+
+    private static func numericValue(_ raw: Any) -> Double? {
+        if let value = raw as? Double { return value }
+        if let value = raw as? Int { return Double(value) }
+        if let value = raw as? NSNumber { return value.doubleValue }
+        return nil
     }
 
     private static func tidesForToday(_ extrema: [TideExtreme]) -> [TideExtreme] {
@@ -505,6 +635,7 @@ extension LocationWeatherManager: CLLocationManagerDelegate {
                 self.precipitationIcon  = "sun.min.fill"
                 self.solunarForecast = nil
                 self.tideExtrema = []
+                self.tideSamples = []
                 self.solunarLoading = false
             }
         default:

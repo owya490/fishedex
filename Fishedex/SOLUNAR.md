@@ -69,7 +69,9 @@ Labels: `SLOW DAY` → `FAIR DAY` → `GOOD DAY` → `EXCELLENT DAY` → `PEAK D
 
 Open-Meteo returns local times as `yyyy-MM-dd'T'HH:mm` — parse with `LocationWeatherManager.parseOpenMeteoDate(_:timeZoneId:)`, not `ISO8601DateFormatter`.
 
-Tide highs/lows are derived locally: find local maxima/minima on the hourly `sea_level_height_msl` series (`TideParser.extrema`).
+Tide highs/lows are derived locally from hourly `sea_level_height_msl` (`TideParser.extrema`). Null or missing marine grid cells are skipped during parsing. If Open-Meteo Marine returns no usable data, [TideTurtle](https://tideturtle.com/developers) is used as a fallback (`GET /api/v1/tides?lat=&lon=`).
+
+Cached entries with empty tides are automatically re-fetched on next launch.
 
 If sun times fail to parse, `SolunarCalculator.estimatedSunrise/Sunset` provides a local solar fallback.
 
@@ -79,7 +81,7 @@ If sun times fail to parse, `SolunarCalculator.estimatedSunrise/Sunset` provides
 SolunarCacheKey(calendarDay: "yyyy-MM-dd", latBucket: round(lat, 2), lonBucket: round(lon, 2))
 ```
 
-Stored in UserDefaults under `fishedex.solunarDayCache.v2`. Invalidate by bumping the storage key when algorithms change.
+Stored in UserDefaults under `fishedex.solunarDayCache.v3`. Invalidate by bumping the storage key when algorithms change.
 
 ## Key types
 
