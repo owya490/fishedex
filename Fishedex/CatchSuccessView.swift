@@ -74,7 +74,7 @@ struct CatchSuccessView: View {
 
     private var spotSpecies: [Fish] {
         guard let fishingSpot else { return [] }
-        return fishingSpot.species(from: session.fish)
+        return fishingSpot.species(in: session.fish)
     }
 
     private var speciesPool: [Fish] {

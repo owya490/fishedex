@@ -66,19 +66,6 @@ extension Fish {
 // MARK: - Catalog
 
 extension Fish {
-    static let samples: [Fish] = catalog.enumerated().map { index, entry in
-        let imageName = assetName(for: entry.name)
-        return species(
-            index + 1,
-            entry.name,
-            imageName: imageName,
-            habitat: entry.habitat,
-            rarity: imageName == "MysteryFish" ? "Uncaptured" : "Captured",
-            season: "All year",
-            caught: imageName != "MysteryFish"
-        )
-    }
-
     private static let catalog: [CatalogEntry] = [
         CatalogEntry("Yellowfin Bream", "Estuary"),
         CatalogEntry("Australian Salmon", "Surf beach"),
@@ -184,6 +171,22 @@ extension Fish {
         CatalogEntry("Blue-eye Trevalla", "Deep reef"),
         CatalogEntry("Silver Perch", "River"),
     ]
+
+    /// All species names from the local Dex catalog — used to validate fishing-spot refs.
+    static let catalogSpeciesNames: Set<String> = Set(catalog.map(\.name))
+
+    static let samples: [Fish] = catalog.enumerated().map { index, entry in
+        let imageName = assetName(for: entry.name)
+        return species(
+            index + 1,
+            entry.name,
+            imageName: imageName,
+            habitat: entry.habitat,
+            rarity: imageName == "MysteryFish" ? "Uncaptured" : "Captured",
+            season: "All year",
+            caught: imageName != "MysteryFish"
+        )
+    }
 
     private struct CatalogEntry {
         let name: String

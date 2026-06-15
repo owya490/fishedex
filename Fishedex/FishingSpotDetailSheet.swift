@@ -11,7 +11,7 @@ struct FishingSpotDetailSheet: View {
     @State private var fishForDetail: Fish?
 
     private var localSpecies: [Fish] {
-        spot.species(from: fish)
+        spot.species(in: fish)
     }
 
     private var caughtCount: Int {

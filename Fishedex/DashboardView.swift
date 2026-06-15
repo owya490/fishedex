@@ -14,6 +14,7 @@ struct MapTabView: View {
 
     @StateObject private var location = LocationWeatherManager()
     @State private var detailSpot: FishingSpot? = nil
+    @State private var showFishingTimes = false
     @State private var hasCenteredOnUser = false
     @State private var latitudeDelta = defaultMapSpan
     @State private var cameraPosition: MapCameraPosition = .region(
@@ -23,7 +24,7 @@ struct MapTabView: View {
         )
     )
 
-    private let spots = FishingSpot.samples
+    private let spots = FishingSpot.catalog
 
     private var caughtCount: Int { fish.filter(\.caught).count }
     private var progress: Double  { Double(caughtCount) / Double(max(fish.count, 1)) }
@@ -35,7 +36,8 @@ struct MapTabView: View {
                 caughtCount: caughtCount,
                 total: fish.count,
                 progress: progress,
-                location: location
+                location: location,
+                onFishingTimesTap: { showFishingTimes = true }
             )
             mapSection
         }
@@ -44,6 +46,11 @@ struct MapTabView: View {
         .onDisappear { location.stop() }
         .onReceive(location.$userCoordinate) { coordinate in
             centerOnUserIfNeeded(coordinate)
+        }
+        .sheet(isPresented: $showFishingTimes) {
+            FishingTimesDetailSheet(location: location) {
+                showFishingTimes = false
+            }
         }
     }
 
@@ -130,9 +137,12 @@ private struct DashboardBannerCarousel: View {
     let total: Int
     let progress: Double
     @ObservedObject var location: LocationWeatherManager
+    var onFishingTimesTap: () -> Void
 
     @State private var page = 0
     @State private var carouselTimer: AnyCancellable?
+
+    private let pageCount = 3
 
     var body: some View {
         VStack(spacing: 0) {
@@ -140,19 +150,22 @@ private struct DashboardBannerCarousel: View {
                 WeatherInfoBanner(location: location)
                     .tag(0)
 
+                FishingTimesBanner(location: location, onTap: onFishingTimesTap)
+                    .tag(1)
+
                 CollectionProgressCard(
                     caughtCount: caughtCount,
                     total: total,
                     progress: progress
                 )
-                .tag(1)
+                .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 100)
+            .frame(height: 112)
             .animation(.easeInOut(duration: 0.45), value: page)
 
             HStack(spacing: 6) {
-                ForEach(0..<2, id: \.self) { index in
+                ForEach(0..<pageCount, id: \.self) { index in
                     Rectangle()
                         .fill(index == page ? FishedexTheme.ocean : FishedexTheme.progressTrack)
                         .frame(width: index == page ? 14 : 6, height: 6)
@@ -172,7 +185,7 @@ private struct DashboardBannerCarousel: View {
             .autoconnect()
             .sink { _ in
                 withAnimation(.easeInOut(duration: 0.45)) {
-                    page = (page + 1) % 2
+                    page = (page + 1) % pageCount
                 }
             }
     }
@@ -237,6 +250,87 @@ private struct WeatherInfoBanner: View {
     }
 }
 
+// MARK: - Fishing times banner
+
+private struct FishingTimesBanner: View {
+    @ObservedObject var location: LocationWeatherManager
+    var onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    Image(systemName: "fish.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(FishedexTheme.tabGreen)
+
+                    Text("BITE TIMES")
+                        .font(FishedexFont.caption)
+                        .foregroundStyle(FishedexTheme.muted)
+                        .kerning(0.6)
+
+                    Spacer()
+
+                    if let forecast = location.solunarForecast {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(SolunarCalculator.starString(rating: forecast.starRating))
+                                .font(FishedexFont.caption)
+                                .foregroundStyle(FishedexTheme.tabBlue)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+
+                            Text(forecast.ratingSummary)
+                                .font(FishedexFont.micro)
+                                .foregroundStyle(FishedexTheme.ink)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                    } else {
+                        Text(location.solunarLoading ? "LOADING..." : "NO DATA")
+                            .font(FishedexFont.micro)
+                            .foregroundStyle(FishedexTheme.muted)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    if let forecast = location.solunarForecast {
+                        WeatherStatChip(
+                            icon: "moon.stars.fill",
+                            title: "MAJOR",
+                            value: SolunarCalculator.formatPeriodList(forecast.majorPeriods),
+                            tint: FishedexTheme.tabGreen
+                        )
+                        WeatherStatChip(
+                            icon: "moon.fill",
+                            title: "MINOR",
+                            value: SolunarCalculator.formatPeriodList(forecast.minorPeriods),
+                            tint: Color(red: 0.45, green: 0.38, blue: 0.72)
+                        )
+                    } else {
+                        WeatherStatChip(
+                            icon: "moon.stars.fill",
+                            title: "MAJOR",
+                            value: "—",
+                            tint: FishedexTheme.tabGreen
+                        )
+                        WeatherStatChip(
+                            icon: "moon.fill",
+                            title: "MINOR",
+                            value: "—",
+                            tint: Color(red: 0.45, green: 0.38, blue: 0.72)
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 4)
+            .padding(.bottom, 0)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 private struct WeatherStatChip: View {
     let icon: String
     let title: String
@@ -264,9 +358,10 @@ private struct WeatherStatChip: View {
             Text(value)
                 .font(FishedexFont.micro)
                 .foregroundStyle(FishedexTheme.ink)
-                .lineLimit(2)
+                .lineLimit(3)
                 .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.65)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
     }

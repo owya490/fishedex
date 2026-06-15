@@ -22,7 +22,9 @@ Fishédex is a minimal SwiftUI iOS app for tracking fish like a Pokédex. The in
 - `Fishedex/ContentView.swift`: The root tab/navigation shell. It hosts the dashboard and Fishédex list tabs and routes fish selections to the detail page.
 - `Fishedex/Fish.swift`: The fish data model and current sample fish catalog.
 - `Fishedex/FishedexTheme.swift`: Shared colors and card styling for the minimal UI direction.
-- `Fishedex/DashboardView.swift`: The landing dashboard.
+- `Fishedex/DashboardView.swift`: Map tab, weather carousel, bite-times banner, and collection progress.
+- `Fishedex/LocationWeatherManager.swift`: Location, Open-Meteo weather, and solunar cache orchestration.
+- `Fishedex/SolunarCalculator.swift` + `Fishedex/SOLUNAR.md`: Local solunar bite times, ratings, and algorithm notes for developers.
 - `Fishedex/FishedexListView.swift`: The searchable fish list and reusable row view.
 - `Fishedex/FishDetailView.swift`: The detailed fish profile screen inspired by the uploaded reference.
 - `Fishedex/FishArtworkView.swift`: Shared fish pixel-art rendering helpers.

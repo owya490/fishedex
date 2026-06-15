@@ -44,16 +44,12 @@ struct FishingSpot: Identifiable, Hashable {
     let coordinate: CLLocationCoordinate2D
     let about: String
     let tips: String
-    let speciesNames: [String]
+    let species: [FishSpeciesRef]
 
     var biomeLabel: String { biome.displayName }
 
-    func species(from catalog: [Fish]) -> [Fish] {
-        speciesNames.compactMap { name in
-            catalog.first {
-                $0.name.compare(name, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
-            }
-        }
+    func species(in catalog: [Fish]) -> [Fish] {
+        species.compactMap { $0.resolve(in: catalog) }
     }
 
     func hash(into hasher: inout Hasher) {
@@ -65,87 +61,138 @@ struct FishingSpot: Identifiable, Hashable {
     }
 }
 
+// MARK: - Default location catalog
+//
+// Every entry below becomes a pin on the MAP tab. To add a location, append one
+// row to `catalogEntries` — no other files need to change.
+//
+//   id            Stable slug (use kebab-case; don't rename after release)
+//   name          Shown on the map pin modal and catch log
+//   biome         .freshwater | .estuary | .saltwater | .coastal
+//   scene         .river | .lake | .harbour | .pier | .beach — picks pixel art
+//   latitude      Pin latitude  (e.g. -33.867 for Sydney)
+//   longitude     Pin longitude (e.g. 151.201)
+//   about         Description in the location info modal
+//   tips          Angler tip shown in the modal
+//   species       `FishSpeciesRef` members (autocomplete from FishCatalogSpecies.swift)
+
 extension FishingSpot {
-    static let samples: [FishingSpot] = [
-        .init(
+    /// All default fishing locations shown on the map.
+    static let catalog: [FishingSpot] = catalogEntries.map(makeSpot)
+
+    /// Back-compat alias — prefer `catalog`.
+    static let samples: [FishingSpot] = catalog
+
+    private static let catalogEntries: [CatalogEntry] = [
+        CatalogEntry(
             id: "whispering-creek",
             name: "Whispering Creek",
             biome: .freshwater,
             scene: .river,
-            coordinate: .init(latitude: -33.8640, longitude: 151.1922),
+            latitude: -33.8640,
+            longitude: 151.1922,
             about: "A shaded urban creek pocket where bass ambush bait along reed edges. Calm mornings are best for sight-casting.",
             tips: "Try worms or small hard-body lures near structure.",
-            speciesNames: [
-                "Australian Bass",
-                "Murray Cod",
-                "Eels (Short and Long-finned)",
-                "Brown Trout",
-                "Carp",
+            species: [
+                .australianBass,
+                .murrayCod,
+                .eelsShortAndLongFinned,
+                .brownTrout,
+                .carp,
             ]
         ),
-        .init(
+        CatalogEntry(
             id: "pyrmont-bay",
             name: "Pyrmont Bay",
             biome: .estuary,
             scene: .lake,
-            coordinate: .init(latitude: -33.8730, longitude: 151.1948),
+            latitude: -33.8730,
+            longitude: 151.1948,
             about: "Sheltered harbour water mixing fresh runoff with salt. Bream and flathead patrol the pylons at high tide.",
             tips: "Fish the tide change with peeled prawn or soft plastics.",
-            speciesNames: [
-                "Yellowfin Bream",
-                "Mulloway",
-                "Luderick",
-                "Flathead (Dusky)",
-                "Mud Crab",
+            species: [
+                .yellowfinBream,
+                .mulloway,
+                .luderick,
+                .flatheadDusky,
+                .mudCrab,
             ]
         ),
-        .init(
+        CatalogEntry(
             id: "walsh-bay",
             name: "Walsh Bay",
             biome: .saltwater,
             scene: .pier,
-            coordinate: .init(latitude: -33.8598, longitude: 151.2058),
+            latitude: -33.8598,
+            longitude: 151.2058,
             about: "Deep wharf shadows and current lines attract pelagics and reef fish. Evening sessions can turn on fast.",
             tips: "Work metal slices along the wall on a run-out tide.",
-            speciesNames: [
-                "Snapper",
-                "Yellowfin Tuna",
-                "Australian Salmon",
-                "Bonito",
-                "Samsonfish",
+            species: [
+                .snapper,
+                .yellowfinTuna,
+                .australianSalmon,
+                .bonito,
+                .samsonfish,
             ]
         ),
-        .init(
+        CatalogEntry(
             id: "darling-harbour",
             name: "Darling Harbour",
             biome: .coastal,
             scene: .harbour,
-            coordinate: .init(latitude: -33.8703, longitude: 151.2018),
+            latitude: -33.8703,
+            longitude: 151.2018,
             about: "Busy waterfront with jetties and bait-rich edges. Trevally and squid hunt the lights after dusk.",
             tips: "Squid jigs work well once the boardwalk lights switch on.",
-            speciesNames: [
-                "Trevallies",
-                "Squid",
-                "Blue Swimmer Crab",
-                "Garfish",
-                "Tailor",
+            species: [
+                .trevallies,
+                .squid,
+                .blueSwimmerCrab,
+                .garfish,
+                .tailor,
             ]
         ),
-        .init(
+        CatalogEntry(
             id: "rushcutters-bay",
             name: "Rushcutters Bay",
             biome: .saltwater,
             scene: .beach,
-            coordinate: .init(latitude: -33.8737, longitude: 151.2298),
+            latitude: -33.8737,
+            longitude: 151.2298,
             about: "Open bay flats and weed beds hold flathead and bream. Light wind days are ideal for wading the shallows.",
             tips: "Drag a soft plastic across sand patches between weed.",
-            speciesNames: [
-                "Flathead (Tiger)",
-                "Yellowfin Bream",
-                "Luderick",
-                "Tailor",
-                "Sand Whiting",
+            species: [
+                .flatheadTiger,
+                .yellowfinBream,
+                .luderick,
+                .tailor,
+                .sandWhiting,
             ]
         ),
     ]
+
+    private struct CatalogEntry {
+        let id: String
+        let name: String
+        let biome: FishingSpotBiome
+        let scene: FishingSpotScene
+        let latitude: Double
+        let longitude: Double
+        let about: String
+        let tips: String
+        let species: [FishSpeciesRef]
+    }
+
+    private static func makeSpot(_ entry: CatalogEntry) -> FishingSpot {
+        FishingSpot(
+            id: entry.id,
+            name: entry.name,
+            biome: entry.biome,
+            scene: entry.scene,
+            coordinate: CLLocationCoordinate2D(latitude: entry.latitude, longitude: entry.longitude),
+            about: entry.about,
+            tips: entry.tips,
+            species: entry.species
+        )
+    }
 }
