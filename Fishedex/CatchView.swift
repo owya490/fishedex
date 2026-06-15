@@ -3,7 +3,6 @@ import AVFoundation
 import ARKit
 
 private enum CatchPhase {
-    case measuring
     case camera
     case scanning
     case success
@@ -22,22 +21,29 @@ private struct CatchSuccessPayload: Identifiable {
 struct CatchView: View {
     @EnvironmentObject private var session: SessionManager
 
+    var fishingSpot: FishingSpot? = nil
     let onBack: () -> Void
     var onCatchLogged: () -> Void = {}
+
+    @AppStorage("catchMeasuringEnabled") private var isMeasuringEnabled = true
 
     @StateObject private var camera           = CameraManager()
     @StateObject private var locationWeather  = LocationWeatherManager()
     @StateObject private var measureController = FishMeasureController()
-    @State private var phase: CatchPhase      = .measuring
+    @State private var phase: CatchPhase      = .camera
     @State private var showCapture            = false
     @State private var scanProgress: CGFloat  = 0
     @State private var caughtAt               = Date()
     @State private var scanTask: Task<Void, Never>?
     @State private var detectionResult: FishDetectionResult?
     @State private var measuredLengthCm: Double?
-    @State private var showMeasureAR = true
     @State private var scanImage: UIImage?
     @State private var successPayload: CatchSuccessPayload?
+    @State private var isCapturing = false
+
+    private var usesARMeasuring: Bool {
+        isMeasuringEnabled && ARWorldTrackingConfiguration.isSupported
+    }
 
     private let minimumScanDuration: TimeInterval = 2
     private let fallbackScanDuration: TimeInterval = 4
@@ -52,34 +58,31 @@ struct CatchView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            if phase == .measuring {
-                MeasureHUD(
-                    measureController: measureController,
-                    locationWeather: locationWeather,
-                    onBack: onBack,
-                    onSkip: advanceToCamera,
-                    onContinue: advanceToCamera
-                )
-            } else {
-                CameraHUD(
-                    camera: camera,
-                    locationWeather: locationWeather,
-                    phase: phase,
-                    showCapture: showCapture,
-                    scanProgress: scanProgress,
-                    onBack: handleBack,
-                    onCapture: captureFish
-                )
-            }
+            CatchHUD(
+                camera: camera,
+                measureController: measureController,
+                locationWeather: locationWeather,
+                fishingSpot: fishingSpot,
+                phase: phase,
+                isMeasuringEnabled: $isMeasuringEnabled,
+                isCapturing: isCapturing || camera.isCapturing,
+                showCapture: showCapture,
+                scanProgress: scanProgress,
+                scanImage: scanImage,
+                onBack: handleBack,
+                onCapture: captureFish,
+                onResetMeasure: measureController.requestReset
+            )
         }
         .fullScreenCover(item: $successPayload, onDismiss: resetCatchFlow) { payload in
             CatchSuccessView(
                 capturedImage: payload.image,
-                initialLocationName: locationWeather.locationName,
-                initialCoordinate: locationWeather.userCoordinate,
+                initialLocationName: fishingSpot?.name ?? locationWeather.locationName,
+                initialCoordinate: fishingSpot?.coordinate ?? locationWeather.userCoordinate,
                 caughtAt: payload.caughtAt,
                 detectionResult: payload.detectionResult,
                 measuredLengthCm: payload.measuredLengthCm,
+                fishingSpot: fishingSpot,
                 onFinished: {
                     successPayload = nil
                     resetCatchFlow()
@@ -91,31 +94,30 @@ struct CatchView: View {
         .onAppear {
             locationWeather.start()
             camera.preparePermission()
-            if phase == .camera {
-                camera.requestAndSetup()
-            }
+            syncCaptureSource()
         }
         .onDisappear {
             scanTask?.cancel()
             camera.stopSession()
+            measureController.stopSession()
             locationWeather.stop()
+        }
+        .onChange(of: isMeasuringEnabled) { _, _ in
+            guard phase == .camera else { return }
+            syncCaptureSource()
         }
     }
 
     @ViewBuilder
     private var captureLayer: some View {
-        if phase == .measuring && showMeasureAR {
-            if ARWorldTrackingConfiguration.isSupported {
-                FishMeasureARView(controller: measureController)
-            } else {
-                FishMeasureUnavailableView()
-            }
-        } else if phase == .measuring {
-            Color.black
-        } else if phase == .scanning || phase == .success, let image = scanImage ?? camera.capturedImage {
+        if phase == .scanning || phase == .success, let image = scanImage ?? camera.capturedImage {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
+        } else if usesARMeasuring {
+            FishMeasureARView(controller: measureController)
+        } else if isMeasuringEnabled {
+            FishMeasureUnavailableView()
         } else if camera.permission == .denied {
             PermissionDeniedBackground()
         } else {
@@ -123,28 +125,55 @@ struct CatchView: View {
         }
     }
 
-    private func advanceToCamera() {
-        measuredLengthCm = measureController.lengthCm
-        measureController.stopSession()
-        showMeasureAR = false
-        phase = .camera
-        camera.requestAndSetup(releaseDelay: 0.05)
+    private func syncCaptureSource() {
+        if usesARMeasuring {
+            camera.stopSession()
+            measureController.requestReset()
+        } else {
+            measureController.stopSession()
+            camera.requestAndSetup()
+        }
     }
 
     private func captureFish() {
-        guard phase == .camera else { return }
+        guard phase == .camera, !isCapturing else { return }
 
-        camera.capturePhoto { image in
-            guard let image else { return }
+        isCapturing = true
 
-            scanImage = image
-            caughtAt = Date()
-            withAnimation(.spring(response: 0.4)) { showCapture = true }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                withAnimation { phase = .scanning }
-                startScanning(image: image)
+        if usesARMeasuring {
+            triggerCaptureFlash()
+            measureController.capturePhoto { image in
+                isCapturing = false
+                guard let image else { return }
+                processCapture(image: image, lengthCm: measureController.lengthCm)
             }
+        } else {
+            camera.capturePhoto { image in
+                isCapturing = false
+                guard let image else { return }
+                processCapture(image: image, lengthCm: nil)
+            }
+        }
+    }
+
+    private func triggerCaptureFlash() {
+        withAnimation(.easeIn(duration: 0.05)) { camera.flashOpacity = 1 }
+        withAnimation(.easeOut(duration: 0.35).delay(0.05)) { camera.flashOpacity = 0 }
+    }
+
+    private func processCapture(image: UIImage, lengthCm: Double?) {
+        measuredLengthCm = lengthCm
+        scanImage = image
+        caughtAt = Date()
+        withAnimation(.spring(response: 0.4)) { showCapture = true }
+
+        if usesARMeasuring {
+            measureController.stopSession()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation { phase = .scanning }
+            startScanning(image: image)
         }
     }
 
@@ -163,7 +192,6 @@ struct CatchView: View {
                 do {
                     aiResult = try await session.classifyFish(image: image)
                 } catch {
-                    // Keep the catch flow moving even if classification fails.
                     print("Fish classification failed:", error.localizedDescription)
                 }
             }
@@ -211,12 +239,6 @@ struct CatchView: View {
         if phase == .success {
             successPayload = nil
             resetCatchFlow()
-        } else if phase == .camera {
-            camera.stopSession()
-            camera.capturedImage = nil
-            scanImage = nil
-            showMeasureAR = true
-            phase = .measuring
         } else {
             onBack()
         }
@@ -230,12 +252,12 @@ struct CatchView: View {
         measuredLengthCm = nil
         measureController.requestReset()
         showCapture = false
-        showMeasureAR = true
-        phase = .measuring
+        isCapturing = false
+        phase = .camera
         successPayload = nil
         scanImage = nil
         camera.capturedImage = nil
-        camera.stopSession()
+        syncCaptureSource()
     }
 }
 
@@ -261,33 +283,45 @@ private struct PermissionDeniedBackground: View {
     }
 }
 
-// MARK: - Measure HUD
+// MARK: - Unified HUD
 
-private struct MeasureHUD: View {
+private struct CatchHUD: View {
+    @ObservedObject var camera: CameraManager
     @ObservedObject var measureController: FishMeasureController
     @ObservedObject var locationWeather: LocationWeatherManager
+    var fishingSpot: FishingSpot? = nil
+    let phase: CatchPhase
+    @Binding var isMeasuringEnabled: Bool
+    let isCapturing: Bool
+    let showCapture: Bool
+    let scanProgress: CGFloat
+    let scanImage: UIImage?
     let onBack: () -> Void
-    let onSkip: () -> Void
-    let onContinue: () -> Void
+    let onCapture: () -> Void
+    let onResetMeasure: () -> Void
+
+    @State private var showSettings = false
+
+    private var isScanning: Bool { phase == .scanning }
+    private var showsMeasureUI: Bool {
+        isMeasuringEnabled && ARWorldTrackingConfiguration.isSupported && phase == .camera
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 10) {
-                FishedexBackButton(action: onBack, style: .overlay)
-                Spacer()
-                ContextChip(manager: locationWeather)
-                Spacer()
-                Color.clear.frame(width: 32, height: 32)
+            topBar
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+
+            if let fishingSpot, phase == .camera {
+                FishingSpotCatchBanner(spot: fishingSpot)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
 
             Spacer()
 
-            MeasureReticle(surfaceReady: measureController.surfaceDetected)
-                .frame(width: 230, height: 185)
-
-            if let lengthCm = measureController.lengthCm {
+            if showsMeasureUI, let lengthCm = measureController.lengthCm {
                 Text(String(format: "%.1f cm", lengthCm))
                     .font(FishedexFont.pokemon(28))
                     .foregroundStyle(.white)
@@ -296,50 +330,182 @@ private struct MeasureHUD: View {
                     .background(.black.opacity(0.65))
                     .fishedexSquare()
                     .fishedexBorder()
-                    .padding(.top, 16)
+                    .padding(.bottom, 12)
+            }
+
+            if showsMeasureUI {
+                MeasureReticle(surfaceReady: measureController.surfaceDetected)
+                    .frame(width: 230, height: 185)
+            } else {
+                ScanningReticle(active: isCapturing || showCapture)
+                    .frame(width: 230, height: 185)
             }
 
             Spacer()
 
-            VStack(spacing: 12) {
-                Text(measureController.instructionText.uppercased())
-                    .font(FishedexFont.subheadline)
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
-                    .padding(.horizontal, 24)
+            bottomControls
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+        }
+        .sheet(isPresented: $showSettings) {
+            CatchSettingsSheet(isMeasuringEnabled: $isMeasuringEnabled)
+        }
+    }
 
-                HStack(spacing: 12) {
-                    if measureController.pointCount > 0 {
-                        Button(action: measureController.requestReset) {
-                            Text("RESET")
-                                .font(FishedexFont.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(.black.opacity(0.55))
-                                .fishedexSquare()
-                                .fishedexBorder()
-                        }
-                        .buttonStyle(.plain)
-                    }
+    private var topBar: some View {
+        HStack(alignment: .center, spacing: 10) {
+            FishedexBackButton(action: onBack, style: .overlay)
+                .opacity(isScanning ? 0.35 : 1)
+                .disabled(isScanning)
 
-                    Button(action: measureController.isMeasurementComplete ? onContinue : onSkip) {
-                        Text(measureController.isMeasurementComplete ? "TAKE PHOTO" : "SKIP")
-                            .font(FishedexFont.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(measureController.isMeasurementComplete ? FishedexTheme.tabGreen : FishedexTheme.tabBlue)
-                            .fishedexSquare()
-                            .fishedexBorder()
-                    }
-                    .buttonStyle(.plain)
+            Spacer()
+
+            ContextChip(manager: locationWeather)
+
+            Spacer()
+
+            if let image = scanImage ?? camera.capturedImage {
+                CapturedThumb(image: image)
+            } else {
+                CatchSettingsButton(isDisabled: isScanning) {
+                    showSettings = true
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
         }
+    }
+
+    private var bottomControls: some View {
+        VStack(spacing: 16) {
+            if isScanning {
+                FishDetectedBanner(progress: scanProgress)
+                    .frame(maxWidth: 288)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            if phase == .camera {
+                VStack(spacing: 8) {
+                    if showsMeasureUI {
+                        HStack(spacing: 12) {
+                            Text(measureController.instructionText.uppercased())
+                                .font(FishedexFont.subheadline)
+                                .foregroundStyle(.white)
+                                .multilineTextAlignment(.center)
+                                .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
+                                .frame(maxWidth: .infinity)
+
+                            if measureController.pointCount > 0 {
+                                Button(action: onResetMeasure) {
+                                    Text("RESET")
+                                        .font(FishedexFont.caption)
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(.black.opacity(0.55))
+                                        .fishedexSquare()
+                                        .fishedexBorder()
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    PixelFishingRodButton(isCapturing: isCapturing, action: onCapture)
+                    Text("CATCH")
+                        .font(FishedexFont.subheadline)
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Catch settings
+
+private struct CatchSettingsButton: View {
+    let isDisabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 32, height: 32)
+                .background(.black.opacity(0.65))
+                .fishedexSquare()
+                .fishedexBorder()
+        }
+        .buttonStyle(.plain)
+        .opacity(isDisabled ? 0.35 : 1)
+        .disabled(isDisabled)
+    }
+}
+
+private struct CatchSettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var isMeasuringEnabled: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("CATCH SETTINGS")
+                    .font(FishedexFont.title)
+                    .foregroundStyle(FishedexTheme.ink)
+
+                Spacer()
+
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(FishedexTheme.ink)
+                        .frame(width: 28, height: 28)
+                        .background(FishedexTheme.progressTrack)
+                        .fishedexSquare()
+                        .fishedexBorder(lineWidth: 1)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+
+            VStack(spacing: 0) {
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: "ruler")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(FishedexTheme.tabBlue)
+                        .frame(width: 36, height: 36)
+                        .background(FishedexTheme.tabBlue.opacity(0.12))
+                        .fishedexSquare()
+                        .fishedexBorder(lineWidth: 1)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("MEASURE FISH")
+                            .font(FishedexFont.headline)
+                            .foregroundStyle(FishedexTheme.ink)
+
+                        Text("Use AR to measure length before catching")
+                            .font(FishedexFont.caption)
+                            .foregroundStyle(FishedexTheme.muted)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    FishedexPixelToggle(isOn: $isMeasuringEnabled)
+                }
+                .padding(16)
+            }
+            .background(Color.white)
+            .fishedexSquare()
+            .fishedexBorder()
+            .padding(.horizontal, 20)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.96).ignoresSafeArea())
+        .presentationDetents([.height(220)])
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -371,78 +537,6 @@ private struct MeasureReticle: View {
     }
 }
 
-// MARK: - HUD overlay
-
-private struct CameraHUD: View {
-    @ObservedObject var camera: CameraManager
-    @ObservedObject var locationWeather: LocationWeatherManager
-    let phase: CatchPhase
-    let showCapture: Bool
-    let scanProgress: CGFloat
-    let onBack: () -> Void
-    let onCapture: () -> Void
-
-    private var isScanning: Bool { phase == .scanning }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            topBar
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-
-            Spacer()
-
-            ScanningReticle(active: camera.isCapturing || showCapture)
-                .frame(width: 230, height: 185)
-
-            Spacer()
-
-            bottomControls
-                .padding(.horizontal, 24)
-                .padding(.bottom, 40)
-        }
-    }
-
-    private var topBar: some View {
-        HStack(alignment: .center, spacing: 10) {
-            FishedexBackButton(action: onBack, style: .overlay)
-                .opacity(isScanning ? 0.35 : 1)
-                .disabled(isScanning)
-
-            Spacer()
-
-            ContextChip(manager: locationWeather)
-
-            Spacer()
-
-            if let img = camera.capturedImage {
-                CapturedThumb(image: img)
-            } else {
-                Color.clear.frame(width: 32, height: 32)
-            }
-        }
-    }
-
-    private var bottomControls: some View {
-        VStack(spacing: 16) {
-            if isScanning {
-                FishDetectedBanner(progress: scanProgress)
-                    .frame(maxWidth: 288)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-            if phase == .camera {
-                VStack(spacing: 8) {
-                    PixelFishingRodButton(isCapturing: camera.isCapturing, action: onCapture)
-                    Text("CATCH")
-                        .font(FishedexFont.subheadline)
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.6), radius: 0, x: 1, y: 1)
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Captured photo thumbnail
 
 private struct CapturedThumb: View {
@@ -459,6 +553,36 @@ private struct CapturedThumb: View {
 }
 
 // MARK: - Context chip (real time + weather)
+
+private struct FishingSpotCatchBanner: View {
+    let spot: FishingSpot
+
+    var body: some View {
+        HStack(spacing: 10) {
+            FishingSpotSceneImageView(scene: spot.scene)
+                .frame(width: 32, height: 32)
+                .clipped()
+                .fishedexBorder(lineWidth: 1, color: .white.opacity(0.35))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(spot.name.uppercased())
+                    .font(FishedexFont.caption)
+                    .foregroundStyle(.white)
+                    .kerning(0.5)
+                Text(spot.biomeLabel.uppercased())
+                    .font(FishedexFont.micro)
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.black.opacity(0.65))
+        .fishedexSquare()
+        .fishedexBorder()
+    }
+}
 
 private struct ContextChip: View {
     @ObservedObject var manager: LocationWeatherManager

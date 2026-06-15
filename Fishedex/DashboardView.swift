@@ -10,9 +10,10 @@ private let defaultMapSpan = 0.038
 struct MapTabView: View {
     let fish: [Fish]
     var onLogoTap: (() -> Void)? = nil
+    var onStartFishing: ((FishingSpot) -> Void)? = nil
 
     @StateObject private var location = LocationWeatherManager()
-    @State private var selectedSpot: FishingSpot? = nil
+    @State private var detailSpot: FishingSpot? = nil
     @State private var hasCenteredOnUser = false
     @State private var latitudeDelta = defaultMapSpan
     @State private var cameraPosition: MapCameraPosition = .region(
@@ -72,36 +73,40 @@ struct MapTabView: View {
                 ForEach(spots) { spot in
                     Annotation("", coordinate: spot.coordinate) {
                         FishingSpotPin(
-                            isSelected: selectedSpot?.id == spot.id,
+                            scene: spot.scene,
+                            biome: spot.biome,
+                            isSelected: detailSpot?.id == spot.id,
                             zoomScale: pinZoomScale
                         )
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedSpot = selectedSpot?.id == spot.id ? nil : spot
-                                }
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                detailSpot = spot
                             }
+                        }
                     }
                 }
                 UserAnnotation()
             }
-            .mapStyle(.standard)
+            .mapStyle(.standard(elevation: .flat))
+            .environment(\.colorScheme, .light)
             .onMapCameraChange(frequency: .continuous) { context in
                 latitudeDelta = context.region.span.latitudeDelta
             }
-            .onTapGesture {
-                withAnimation { selectedSpot = nil }
-            }
 
             localWatersLabel
-
-            if let spot = selectedSpot {
-                SpotCallout(spot: spot)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 56)
-                    .transition(.opacity.combined(with: .scale(scale: 0.92, anchor: .top)))
-            }
         }
         .frame(maxHeight: .infinity)
+        .sheet(item: $detailSpot) { spot in
+            FishingSpotDetailSheet(
+                spot: spot,
+                fish: fish,
+                onStartFishing: {
+                    detailSpot = nil
+                    onStartFishing?(spot)
+                },
+                onDismiss: { detailSpot = nil }
+            )
+        }
     }
 
     private var localWatersLabel: some View {
@@ -306,26 +311,32 @@ private struct CollectionProgressCard: View {
 
 // MARK: - Map annotation pin
 
-private struct FishingSpotPin: View {
+struct FishingSpotPin: View {
+    let scene: FishingSpotScene
+    let biome: FishingSpotBiome
     let isSelected: Bool
     var zoomScale: CGFloat = 1.0
+
+    private let pinSize: CGFloat = 28
+    private let imageInset: CGFloat = 2
 
     var body: some View {
         ZStack {
             Rectangle()
                 .fill(Color.white)
-                .frame(width: 40, height: 40)
-                .fishedexBorder(lineWidth: 2)
+                .frame(width: pinSize, height: pinSize)
+                .fishedexBorder(lineWidth: 1.5)
 
-            Image(systemName: "fish.fill")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color(red: 0.18, green: 0.68, blue: 0.38))
+            FishingSpotSceneImageView(scene: scene)
+                .frame(width: pinSize - imageInset * 2, height: pinSize - imageInset * 2)
+                .clipped()
         }
         .overlay(
             Rectangle()
-                .stroke(isSelected ? FishedexTheme.ocean : Color.clear, lineWidth: 3)
+                .stroke(isSelected ? biome.accentColor : Color.black.opacity(0.2), lineWidth: isSelected ? 2 : 1)
         )
-        .scaleEffect((isSelected ? 1.15 : 1.0) * zoomScale)
+        .shadow(color: .black.opacity(0.18), radius: 0, x: 1, y: 1)
+        .scaleEffect((isSelected ? 1.1 : 1.0) * zoomScale)
         .animation(.spring(response: 0.25), value: isSelected)
     }
 }
@@ -333,27 +344,4 @@ private struct FishingSpotPin: View {
 #Preview {
     MapTabView(fish: Fish.samples)
         .environmentObject(SessionManager())
-}
-
-// MARK: - Spot callout card
-
-private struct SpotCallout: View {
-    let spot: FishingSpot
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(spot.name)
-                .font(FishedexFont.headline)
-                .foregroundStyle(FishedexTheme.ink)
-
-            Text("Biome: \(spot.biome)")
-                .font(FishedexFont.subheadline)
-                .foregroundStyle(FishedexTheme.muted)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .background(Color.white)
-        .fishedexSquare()
-        .fishedexBorder()
-    }
 }

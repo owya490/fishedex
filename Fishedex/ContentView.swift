@@ -13,6 +13,7 @@ struct ContentView: View {
     @EnvironmentObject private var session: SessionManager
     @State private var selectedTab: AppTab = .map
     @State private var hidesBottomTabBar = false
+    @State private var activeFishingSpot: FishingSpot? = nil
     @State private var unauthenticatedScreen: UnauthenticatedScreen = .landing
 
     var body: some View {
@@ -116,11 +117,25 @@ struct ContentView: View {
     private var tabContent: some View {
         switch selectedTab {
         case .map:
-            MapTabView(fish: session.fish, onLogoTap: openCamera)
+            MapTabView(
+                fish: session.fish,
+                onLogoTap: openCamera,
+                onStartFishing: { spot in
+                    activeFishingSpot = spot
+                    selectedTab = .catch_
+                }
+            )
         case .catch_:
             CatchView(
-                onBack: { selectedTab = .map },
-                onCatchLogged: { selectedTab = .dex }
+                fishingSpot: activeFishingSpot,
+                onBack: {
+                    activeFishingSpot = nil
+                    selectedTab = .map
+                },
+                onCatchLogged: {
+                    activeFishingSpot = nil
+                    selectedTab = .dex
+                }
             )
             .transition(.opacity)
         case .dex:

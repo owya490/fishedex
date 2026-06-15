@@ -19,6 +19,7 @@ struct CatchSuccessView: View {
     let caughtAt: Date
     let detectionResult: FishDetectionResult?
     let measuredLengthCm: Double?
+    var fishingSpot: FishingSpot? = nil
     let onFinished: () -> Void
 
     @State private var step: CatchSuccessStep = .reveal
@@ -49,6 +50,7 @@ struct CatchSuccessView: View {
         caughtAt: Date,
         detectionResult: FishDetectionResult? = nil,
         measuredLengthCm: Double? = nil,
+        fishingSpot: FishingSpot? = nil,
         onFinished: @escaping () -> Void
     ) {
         self.capturedImage = capturedImage
@@ -57,8 +59,9 @@ struct CatchSuccessView: View {
         self.caughtAt = caughtAt
         self.detectionResult = detectionResult
         self.measuredLengthCm = measuredLengthCm
+        self.fishingSpot = fishingSpot
         self.onFinished = onFinished
-        _locationName = State(initialValue: initialLocationName)
+        _locationName = State(initialValue: fishingSpot?.name ?? initialLocationName)
         _catchDate = State(initialValue: caughtAt)
         if let measuredLengthCm {
             _lengthCm = State(initialValue: String(format: "%.1f", measuredLengthCm))
@@ -69,6 +72,18 @@ struct CatchSuccessView: View {
         session.fish.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    private var spotSpecies: [Fish] {
+        guard let fishingSpot else { return [] }
+        return fishingSpot.species(from: session.fish)
+    }
+
+    private var speciesPool: [Fish] {
+        if let fishingSpot, !spotSpecies.isEmpty {
+            return spotSpecies
+        }
+        return sortedSpecies
+    }
+
     private var selectedFish: Fish? {
         guard let selectedSpeciesID else { return nil }
         return session.fish.first { $0.id == selectedSpeciesID }
@@ -77,10 +92,14 @@ struct CatchSuccessView: View {
     private var filteredSpecies: [Fish] {
         let query = speciesSearch.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return [] }
-        return sortedSpecies.filter {
+        return speciesPool.filter {
             $0.name.localizedCaseInsensitiveContains(query)
                 || $0.scientificName.localizedCaseInsensitiveContains(query)
         }
+    }
+
+    private var showsSpotQuickPicks: Bool {
+        fishingSpot != nil && !spotSpecies.isEmpty && !speciesFieldFocused && speciesSearch.isEmpty
     }
 
     private var showSpeciesResults: Bool {
@@ -219,6 +238,10 @@ struct CatchSuccessView: View {
                 aiSuggestionBanner(for: detectionResult)
             }
 
+            if showsSpotQuickPicks {
+                spotSpeciesQuickPicks
+            }
+
             if showSpeciesResults {
                 speciesResultsList
             }
@@ -270,6 +293,56 @@ struct CatchSuccessView: View {
             }
         }
         .padding(.horizontal, 8)
+    }
+
+    private var spotSpeciesQuickPicks: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("LIKELY AT \(fishingSpot?.name.uppercased() ?? "THIS SPOT")")
+                .font(FishedexFont.micro)
+                .foregroundStyle(FishedexTheme.tabBlue)
+                .kerning(0.5)
+
+            VStack(spacing: 0) {
+                ForEach(Array(spotSpecies.enumerated()), id: \.element.id) { index, fish in
+                    Button {
+                        selectSpecies(fish)
+                    } label: {
+                        HStack(spacing: 10) {
+                            FishArtworkView(fish: fish, height: 28, showsShadow: false)
+                                .frame(width: 36)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(fish.name.uppercased())
+                                    .font(FishedexFont.headline)
+                                    .foregroundStyle(FishedexTheme.ink)
+                                Text(fish.habitat.uppercased())
+                                    .font(FishedexFont.micro)
+                                    .foregroundStyle(FishedexTheme.muted)
+                            }
+
+                            Spacer()
+
+                            if selectedSpeciesID == fish.id {
+                                Image(systemName: "checkmark.square.fill")
+                                    .foregroundStyle(FishedexTheme.tabGreen)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+
+                    if index < spotSpecies.count - 1 {
+                        Rectangle()
+                            .fill(FishedexTheme.softLine)
+                            .frame(height: 1)
+                    }
+                }
+            }
+            .background(FishedexTheme.card)
+            .fishedexSquare()
+            .fishedexBorder(lineWidth: 1)
+        }
     }
 
     private var speciesResultsList: some View {

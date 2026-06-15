@@ -126,54 +126,7 @@ private enum TabBarIcon {
         PixelCoord(10, 8), PixelCoord(11, 8),
     ]
 
-    private static let rodPixels: Set<PixelCoord> = [
-        // Stick
-        PixelCoord(4, 13), PixelCoord(5, 12), PixelCoord(6, 11), PixelCoord(7, 10),
-        PixelCoord(8, 9), PixelCoord(9, 8), PixelCoord(10, 7), PixelCoord(11, 6),
-        PixelCoord(12, 5), PixelCoord(13, 4),
-        // Reel
-        PixelCoord(7, 10), PixelCoord(8, 10),
-        PixelCoord(7, 11), PixelCoord(8, 11),
-        // Line
-        PixelCoord(13, 5), PixelCoord(13, 6), PixelCoord(13, 7), PixelCoord(13, 8),
-        PixelCoord(13, 9), PixelCoord(13, 10), PixelCoord(13, 11), PixelCoord(13, 12),
-    ]
-}
-
-private struct PixelCoord: Hashable {
-    let x: Int
-    let y: Int
-
-    init(_ x: Int, _ y: Int) {
-        self.x = x
-        self.y = y
-    }
-}
-
-private struct PixelGlyphIcon: View {
-    let pixels: Set<PixelCoord>
-    var tint: Color
-    var pixelSize: CGFloat = 1.5
-    var gridSize: Int = 16
-
-    var body: some View {
-        Canvas { context, _ in
-            for pixel in pixels {
-                let rect = CGRect(
-                    x: CGFloat(pixel.x) * pixelSize,
-                    y: CGFloat(pixel.y) * pixelSize,
-                    width: pixelSize,
-                    height: pixelSize
-                )
-                context.fill(Path(rect), with: .color(tint))
-            }
-        }
-        .frame(
-            width: CGFloat(gridSize) * pixelSize,
-            height: CGFloat(gridSize) * pixelSize
-        )
-        .accessibilityHidden(true)
-    }
+    private static let rodPixels: Set<PixelCoord> = TabBarRodGlyph.pixels
 }
 
 private struct TabBarButton: View {

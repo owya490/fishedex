@@ -152,6 +152,38 @@ extension View {
     }
 }
 
+// MARK: - Pixel toggle
+
+struct FishedexPixelToggle: View {
+    @Binding var isOn: Bool
+
+    private let trackWidth: CGFloat = 52
+    private let trackHeight: CGFloat = 28
+    private let knobSize: CGFloat = 22
+
+    var body: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.12)) { isOn.toggle() }
+        } label: {
+            ZStack(alignment: isOn ? .trailing : .leading) {
+                Rectangle()
+                    .fill(FishedexTheme.progressTrack)
+
+                Rectangle()
+                    .fill(isOn ? FishedexTheme.tabGreen : Color(red: 0.78, green: 0.78, blue: 0.80))
+                    .frame(width: knobSize, height: knobSize)
+                    .padding(3)
+            }
+            .frame(width: trackWidth, height: trackHeight)
+            .fishedexSquare()
+            .fishedexBorder(lineWidth: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(isOn ? "On" : "Off")
+    }
+}
+
 // MARK: - Pixel circle
 
 struct PixelCircleShape: Shape {

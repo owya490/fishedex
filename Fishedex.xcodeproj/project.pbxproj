@@ -22,6 +22,9 @@
 		BB1111112C80000100B1A001 /* FishingSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222C80000100B1A001 /* FishingSpot.swift */; };
 		BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444442C80000100B1A001 /* AppHeaderView.swift */; };
 		BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6666662C80000100B1A001 /* CustomTabBar.swift */; };
+		NN1111112C80000100B1A001 /* PixelGlyphs.swift in Sources */ = {isa = PBXBuildFile; fileRef = NN2222222C80000100B1A001 /* PixelGlyphs.swift */; };
+		NN3333332C80000100B1A001 /* FishingSpotDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = NN4444442C80000100B1A001 /* FishingSpotDetailSheet.swift */; };
+		OO1111112C80000100B1A001 /* FishingSpotSceneArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = OO2222222C80000100B1A001 /* FishingSpotSceneArt.swift */; };
 		BB7777772C80000100B1A001 /* FishedexBackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8888882C80000100B1A001 /* FishedexBackButton.swift */; };
 		CC1111112C80000100B1A001 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2222222C80000100B1A001 /* CameraManager.swift */; };
 		DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2222222C80000100B1A001 /* LocationWeatherManager.swift */; };
@@ -68,6 +71,9 @@
 		BB2222222C80000100B1A001 /* FishingSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpot.swift; sourceTree = "<group>"; };
 		BB4444442C80000100B1A001 /* AppHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHeaderView.swift; sourceTree = "<group>"; };
 		BB6666662C80000100B1A001 /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
+		NN2222222C80000100B1A001 /* PixelGlyphs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelGlyphs.swift; sourceTree = "<group>"; };
+		NN4444442C80000100B1A001 /* FishingSpotDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpotDetailSheet.swift; sourceTree = "<group>"; };
+		OO2222222C80000100B1A001 /* FishingSpotSceneArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishingSpotSceneArt.swift; sourceTree = "<group>"; };
 		BB8888882C80000100B1A001 /* FishedexBackButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishedexBackButton.swift; sourceTree = "<group>"; };
 		CC2222222C80000100B1A001 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		DD2222222C80000100B1A001 /* LocationWeatherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationWeatherManager.swift; sourceTree = "<group>"; };
@@ -176,6 +182,9 @@
 				BB4444442C80000100B1A001 /* AppHeaderView.swift */,
 				BB8888882C80000100B1A001 /* FishedexBackButton.swift */,
 				BB6666662C80000100B1A001 /* CustomTabBar.swift */,
+				NN2222222C80000100B1A001 /* PixelGlyphs.swift */,
+				NN4444442C80000100B1A001 /* FishingSpotDetailSheet.swift */,
+				OO2222222C80000100B1A001 /* FishingSpotSceneArt.swift */,
 				0F1A4C9C2C80000100B1A001 /* FishArtworkView.swift */,
 				0F1A4C9D2C80000100B1A001 /* DashboardView.swift */,
 				0F1A4CA62C80000100B1A001 /* CatchView.swift */,
@@ -285,6 +294,9 @@
 				BB3333332C80000100B1A001 /* AppHeaderView.swift in Sources */,
 				BB7777772C80000100B1A001 /* FishedexBackButton.swift in Sources */,
 				BB5555552C80000100B1A001 /* CustomTabBar.swift in Sources */,
+				NN1111112C80000100B1A001 /* PixelGlyphs.swift in Sources */,
+				NN3333332C80000100B1A001 /* FishingSpotDetailSheet.swift in Sources */,
+				OO1111112C80000100B1A001 /* FishingSpotSceneArt.swift in Sources */,
 				CC1111112C80000100B1A001 /* CameraManager.swift in Sources */,
 				MM1111112C80000100B1A001 /* FishMeasureARView.swift in Sources */,
 				DD1111112C80000100B1A001 /* LocationWeatherManager.swift in Sources */,
